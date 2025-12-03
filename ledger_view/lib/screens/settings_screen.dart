@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/storage_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -134,6 +135,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _pasteFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData != null && clipboardData.text != null && clipboardData.text!.isNotEmpty) {
+        setState(() {
+          _urlController.text = clipboardData.text!;
+          _hasChanges = true;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.content_paste, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('URL pasted from clipboard'),
+                ],
+              ),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Clipboard is empty'),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error pasting from clipboard: $e'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,6 +282,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               _hasChanges = true;
                             });
                           },
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _pasteFromClipboard,
+                            icon: const Icon(Icons.content_paste),
+                            label: const Text('Paste from Clipboard'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF6366F1),
+                              side: const BorderSide(color: Color(0xFF6366F1)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Container(
@@ -350,26 +424,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF6366F1).withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_wallet,
-                          color: Colors.white,
-                          size: 40,
-                        ),
+                      Image.asset(
+                        'assets/images/ledger_view_logo.png',
+                        width: 80,
+                        height: 80,
                       ),
                       const SizedBox(height: 12),
                       Text(

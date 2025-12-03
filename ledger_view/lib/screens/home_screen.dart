@@ -36,6 +36,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _searchLedger() async {
+    // Dismiss the keyboard
+    FocusScope.of(context).unfocus();
+    
     final searchQuery = _searchController.text.trim();
     if (searchQuery.isEmpty) {
       _showError('Please enter a customer number');
