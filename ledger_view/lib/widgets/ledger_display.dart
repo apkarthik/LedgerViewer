@@ -47,7 +47,7 @@ class LedgerDisplay extends StatelessWidget {
                       Text(
                         result.dateRange,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                           fontSize: 14,
                         ),
                       ),
@@ -60,7 +60,7 @@ class LedgerDisplay extends StatelessWidget {
                   icon: const Icon(Icons.print, color: Colors.white),
                   tooltip: 'Print Ledger',
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    backgroundColor: Colors.white.withOpacity(0.2),
                   ),
                 ),
               ],
@@ -333,13 +333,13 @@ class LedgerDisplay extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF10B981).withValues(alpha: 0.1),
-            const Color(0xFF059669).withValues(alpha: 0.1),
+            const Color(0xFF10B981).withOpacity(0.1),
+            const Color(0xFF059669).withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFF10B981).withValues(alpha: 0.3),
+          color: const Color(0xFF10B981).withOpacity(0.3),
         ),
       ),
       child: Row(
