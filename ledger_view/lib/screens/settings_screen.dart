@@ -138,9 +138,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _pasteFromClipboard() async {
     try {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData != null && clipboardData.text != null && clipboardData.text!.isNotEmpty) {
+      if (clipboardData?.text?.isNotEmpty == true) {
         setState(() {
-          _urlController.text = clipboardData.text!;
+          _urlController.text = clipboardData!.text!;
           _hasChanges = true;
         });
         if (mounted) {
@@ -188,6 +188,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             content: Text('Error pasting from clipboard: $e'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
