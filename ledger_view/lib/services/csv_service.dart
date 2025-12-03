@@ -135,8 +135,10 @@ class CsvService {
   }
 
   static bool _isDateString(String str) {
-    // Simple check if the string looks like a date
-    return str.contains('-') || str.contains('/') || str.contains('2025') || str.contains('2024');
+    // Check if the string looks like a date using regex pattern
+    // Matches yyyy-mm-dd, dd-mm-yyyy, dd/mm/yyyy formats
+    final datePattern = RegExp(r'\d{4}-\d{2}-\d{2}|\d{2}[-/]\d{2}[-/]\d{4}|\d{2}-[A-Za-z]{3}-\d{4}');
+    return datePattern.hasMatch(str) || str.contains('-') && str.length > 8;
   }
 
   static String _formatDate(String dateStr) {
