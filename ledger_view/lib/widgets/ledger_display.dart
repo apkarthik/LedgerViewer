@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/ledger_entry.dart';
+import '../services/print_service.dart';
 
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
@@ -28,23 +29,38 @@ class LedgerDisplay extends StatelessWidget {
                 topRight: Radius.circular(16),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  result.customerName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        result.customerName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        result.dateRange,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  result.dateRange,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 14,
+                // Print Button
+                IconButton(
+                  onPressed: () => _printLedger(context),
+                  icon: const Icon(Icons.print, color: Colors.white),
+                  tooltip: 'Print Ledger',
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
                   ),
                 ),
               ],
@@ -74,6 +90,23 @@ class LedgerDisplay extends StatelessWidget {
                   // Closing Balance
                   if (result.closingBalance.isNotEmpty)
                     _buildClosingBalance(),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Print Button at bottom
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _printLedger(context),
+                      icon: const Icon(Icons.print),
+                      label: const Text('Print Ledger'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -81,6 +114,21 @@ class LedgerDisplay extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _printLedger(BuildContext context) async {
+    try {
+      await PrintService.printLedger(result);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error printing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildTableHeader() {
