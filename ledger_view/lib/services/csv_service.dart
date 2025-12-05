@@ -150,13 +150,21 @@ class CsvService {
       if (particulars.toLowerCase().contains('closing balance')) {
         closingBalance = credit.isNotEmpty ? credit : debit;
         // Get totals from the row above (previous row)
+        // CSV structure: The totals row appears before the Closing Balance row
+        // and has the total debit value in the first column (normally the date column)
+        // and total credit in the credit column (index 6).
+        // Example: ['101000', '', '', '', '', '', '93700'] represents totals
         if (previousRow != null) {
-          final prevDate = previousRow.isNotEmpty ? previousRow[0].toString().trim() : '';
+          final prevFirstColumn = previousRow.isNotEmpty ? previousRow[0].toString().trim() : '';
           final prevCredit = previousRow.length > 6 ? previousRow[6].toString().trim() : '';
-          // Check if previous row is a totals row (has number in date field, not a date)
-          if (prevDate.isNotEmpty && !_isDateString(prevDate)) {
-            totalDebit = prevDate;
-            totalCredit = prevCredit;
+          // Check if previous row is a totals row (has numeric value in first column, not a date)
+          if (prevFirstColumn.isNotEmpty && !_isDateString(prevFirstColumn)) {
+            // Validate that it's actually a numeric value
+            final numValue = double.tryParse(prevFirstColumn.replaceAll(',', ''));
+            if (numValue != null) {
+              totalDebit = prevFirstColumn;
+              totalCredit = prevCredit;
+            }
           }
         }
       } else if (date.isNotEmpty || toBy.isNotEmpty || particulars.isNotEmpty) {

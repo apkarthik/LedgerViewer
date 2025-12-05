@@ -384,6 +384,13 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                             'assets/images/ledger_view_logo.png',
                             width: 120,
                             height: 120,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.people_outline,
+                                size: 100,
+                                color: Colors.grey.shade400,
+                              );
+                            },
                           ),
                           const SizedBox(height: 16),
                           Text(
