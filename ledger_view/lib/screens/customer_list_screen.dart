@@ -27,7 +27,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final url = await StorageService.getCsvUrl();
+    final url = await StorageService.getMasterSheetUrl();
     setState(() {
       _csvUrl = url;
     });
@@ -35,7 +35,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
   Future<void> _loadCustomerData() async {
     if (_csvUrl == null || _csvUrl!.isEmpty) {
-      _showError('Please configure CSV URL in Settings first');
+      _showError('Please configure Master Sheet URL in Settings first');
       return;
     }
 
@@ -45,19 +45,8 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     });
 
     try {
-      // Get the Master sheet URL (assuming it's the same base URL with different sheet)
-      // The URL should point to the Master sheet that contains customer data
-      String masterUrl = _csvUrl!;
-      
-      // If the URL contains gid= parameter, we need to get the Master sheet
-      // For now, assume the user has configured the correct Master sheet URL
-      // or we can try to modify the URL to point to the Master sheet
-      if (masterUrl.contains('gid=')) {
-        // Try to replace with gid=0 for the first sheet (Master)
-        masterUrl = masterUrl.replaceAll(RegExp(r'gid=\d+'), 'gid=0');
-      }
-
-      final customers = await CsvService.fetchCustomerData(masterUrl);
+      // Use the Master sheet URL directly (no need to modify gid parameter)
+      final customers = await CsvService.fetchCustomerData(_csvUrl!);
 
       setState(() {
         _allCustomers = customers;
@@ -249,7 +238,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Please configure CSV URL in Settings first',
+                              'Please configure Master Sheet URL in Settings first',
                               style: TextStyle(color: Colors.amber.shade900),
                             ),
                           ),
