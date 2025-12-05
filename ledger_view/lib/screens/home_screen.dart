@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final url = await StorageService.getCsvUrl();
+    final url = await StorageService.getLedgerSheetUrl();
     final lastSearch = await StorageService.getLastSearch();
     setState(() {
       _csvUrl = url;
@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (_csvUrl == null || _csvUrl!.isEmpty) {
-      _showError('Please configure CSV URL in Settings');
+      _showError('Please configure Ledger Sheet URL in Settings');
       return;
     }
 
@@ -240,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Please configure CSV URL in Settings to start searching',
+                              'Please configure Ledger Sheet URL in Settings to start searching',
                               style: TextStyle(color: Colors.amber.shade900),
                             ),
                           ),

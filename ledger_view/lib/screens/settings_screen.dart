@@ -10,7 +10,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _masterSheetUrlController = TextEditingController();
+  final TextEditingController _ledgerSheetUrlController = TextEditingController();
   bool _isSaving = false;
   bool _hasChanges = false;
 
@@ -21,12 +22,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final url = await StorageService.getCsvUrl();
-    if (url != null) {
-      setState(() {
-        _urlController.text = url;
-      });
-    }
+    final masterUrl = await StorageService.getMasterSheetUrl();
+    final ledgerUrl = await StorageService.getLedgerSheetUrl();
+    setState(() {
+      if (masterUrl != null) {
+        _masterSheetUrlController.text = masterUrl;
+      }
+      if (ledgerUrl != null) {
+        _ledgerSheetUrlController.text = ledgerUrl;
+      }
+    });
   }
 
   Future<void> _saveSettings() async {
@@ -35,7 +40,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     try {
-      await StorageService.saveCsvUrl(_urlController.text.trim());
+      await StorageService.saveMasterSheetUrl(_masterSheetUrlController.text.trim());
+      await StorageService.saveLedgerSheetUrl(_ledgerSheetUrlController.text.trim());
       setState(() {
         _isSaving = false;
         _hasChanges = false;
@@ -89,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         content: const Text(
-          'This will clear all saved settings including the CSV URL and search history. Are you sure?',
+          'This will clear all saved settings including the sheet URLs and search history. Are you sure?',
         ),
         actions: [
           TextButton(
@@ -111,7 +117,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed == true) {
       await StorageService.clearAll();
       setState(() {
-        _urlController.clear();
+        _masterSheetUrlController.clear();
+        _ledgerSheetUrlController.clear();
         _hasChanges = false;
       });
       if (mounted) {
@@ -135,24 +142,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _pasteFromClipboard() async {
+  Future<void> _pasteFromClipboard(TextEditingController controller, String fieldName) async {
     try {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
       if (clipboardData?.text?.isNotEmpty == true) {
         setState(() {
           // Clear existing text first, then set new text
-          _urlController.clear();
-          _urlController.text = clipboardData!.text!;
+          controller.clear();
+          controller.text = clipboardData!.text!;
           _hasChanges = true;
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.content_paste, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('URL pasted from clipboard'),
+                  const Icon(Icons.content_paste, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('$fieldName URL pasted from clipboard'),
                 ],
               ),
               backgroundColor: Colors.green.shade600,
@@ -232,7 +239,116 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // CSV URL Card
+                // Instructions Card
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.blue.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'To get the CSV URL for each sheet:\n1. Open your Google Sheet\n2. Go to File → Share → Publish to web\n3. Select the specific sheet (Master or Ledger)\n4. Choose CSV format and publish\n5. Copy the generated link',
+                          style: TextStyle(
+                            color: Colors.blue.shade900,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Master Sheet URL Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.people,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Master Sheet URL',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  Text(
+                                    'CSV link for Customer List (Master sheet)',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _masterSheetUrlController,
+                          decoration: const InputDecoration(
+                            hintText: 'https://docs.google.com/spreadsheets/d/.../Master',
+                            prefixIcon: Icon(Icons.cloud_download),
+                          ),
+                          maxLines: 2,
+                          keyboardType: TextInputType.url,
+                          onChanged: (_) {
+                            setState(() {
+                              _hasChanges = true;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pasteFromClipboard(_masterSheetUrlController, 'Master Sheet'),
+                            icon: const Icon(Icons.content_paste),
+                            label: const Text('Paste from Clipboard'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.green,
+                              side: const BorderSide(color: Colors.green),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Ledger Sheet URL Card
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
@@ -248,7 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(
-                                Icons.link,
+                                Icons.receipt_long,
                                 color: Color(0xFF6366F1),
                               ),
                             ),
@@ -258,13 +374,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Google Sheets CSV URL',
+                                    'Ledger Sheet URL',
                                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
                                   Text(
-                                    'Published CSV link from Google Drive',
+                                    'CSV link for Ledger Data (Ledger sheet)',
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: Colors.grey.shade600,
                                         ),
@@ -276,9 +392,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(height: 16),
                         TextField(
-                          controller: _urlController,
+                          controller: _ledgerSheetUrlController,
                           decoration: const InputDecoration(
-                            hintText: 'https://docs.google.com/spreadsheets/d/...',
+                            hintText: 'https://docs.google.com/spreadsheets/d/.../Ledger',
                             prefixIcon: Icon(Icons.cloud_download),
                           ),
                           maxLines: 2,
@@ -293,7 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: _pasteFromClipboard,
+                            onPressed: () => _pasteFromClipboard(_ledgerSheetUrlController, 'Ledger Sheet'),
                             icon: const Icon(Icons.content_paste),
                             label: const Text('Paste from Clipboard'),
                             style: OutlinedButton.styleFrom(
@@ -303,60 +419,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.blue.shade700,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'To get the CSV URL:\n1. Open your Google Sheet\n2. Go to File → Share → Publish to web\n3. Select CSV format and publish\n4. Copy the generated link',
-                                  style: TextStyle(
-                                    color: Colors.blue.shade900,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _isSaving ? null : _saveSettings,
-                            icon: _isSaving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const Icon(Icons.save),
-                            label: const Text('Save Settings'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6366F1),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                          ),
-                        ),
                       ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Save Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : _saveSettings,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Icon(Icons.save),
+                    label: const Text('Save Settings'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6366F1),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
                 ),
@@ -463,7 +554,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _urlController.dispose();
+    _masterSheetUrlController.dispose();
+    _ledgerSheetUrlController.dispose();
     super.dispose();
   }
 }
