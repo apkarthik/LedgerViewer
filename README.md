@@ -5,10 +5,19 @@ A modern Flutter Android app to view customer ledger data from Google Sheets CSV
 ## Features
 
 - 🔍 **Search by Customer Number**: Enter a customer number (e.g., "1139B") to view their ledger
+- 👥 **Customer List**: Browse customer information from Master sheet with search and filter
 - 📊 **Professional Ledger Display**: Clean, formatted view optimized for thermal printer output
 - ☁️ **Google Drive Integration**: Fetch live data from Google Sheets published as CSV
 - 💾 **Persistent Settings**: App data persists until uninstall or manual reset
 - 🎨 **Modern UI**: Professional, colorful design with Material Design 3
+
+## App Screens
+
+The app contains 3 main screens accessible via bottom navigation:
+
+1. **Settings** - Configure the Google Sheets CSV URL and manage app settings
+2. **Customers** - View and search customer information from the Master sheet. Click on any customer to view their ledger
+3. **Ledger Search** - Search for customer ledgers directly by entering a customer number
 
 ## Setup
 
@@ -20,8 +29,8 @@ A modern Flutter Android app to view customer ledger data from Google Sheets CSV
    - Paste this link in the app's **Settings** page
 
 2. **Search for Ledger**:
-   - Enter the customer number (e.g., "1033", "1035", "1139B", "1525")
-   - Click **Search** to fetch and display the ledger
+   - Use the **Ledger Search** tab to enter a customer number directly (e.g., "1033", "1035", "1139B", "1525")
+   - Or use the **Customers** tab to browse and click on a customer to view their ledger
    - Data is fetched fresh from Google Drive on each search
 
 ## Building the APK
