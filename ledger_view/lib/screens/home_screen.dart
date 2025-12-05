@@ -5,7 +5,9 @@ import '../services/storage_service.dart';
 import '../widgets/ledger_display.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String? initialSearchQuery;
+
+  const HomeScreen({super.key, this.initialSearchQuery});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _errorMessage;
   LedgerResult? _ledgerResult;
   String? _csvUrl;
+  bool _autoSearchTriggered = false;
 
   @override
   void initState() {
@@ -29,10 +32,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final lastSearch = await StorageService.getLastSearch();
     setState(() {
       _csvUrl = url;
-      if (lastSearch != null && lastSearch.isNotEmpty) {
+      // If initialSearchQuery is provided, use it instead of last search
+      if (widget.initialSearchQuery != null && widget.initialSearchQuery!.isNotEmpty) {
+        _searchController.text = widget.initialSearchQuery!;
+      } else if (lastSearch != null && lastSearch.isNotEmpty) {
         _searchController.text = lastSearch;
       }
     });
+    
+    // Auto-trigger search if initialSearchQuery is provided
+    if (widget.initialSearchQuery != null && 
+        widget.initialSearchQuery!.isNotEmpty && 
+        !_autoSearchTriggered &&
+        _csvUrl != null &&
+        _csvUrl!.isNotEmpty) {
+      _autoSearchTriggered = true;
+      _searchLedger();
+    }
   }
 
   Future<void> _searchLedger() async {

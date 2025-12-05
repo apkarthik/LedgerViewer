@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ledger_view/services/csv_service.dart';
 import 'package:ledger_view/models/ledger_entry.dart';
+import 'package:ledger_view/models/customer.dart';
 
 void main() {
   group('CsvService', () {
@@ -40,6 +41,16 @@ void main() {
       expect(result.entries.isNotEmpty, isTrue);
     });
 
+    test('findLedgerByNumber returns correct totals from row above closing balance', () {
+      final result = CsvService.findLedgerByNumber(testData, '1035');
+      
+      expect(result, isNotNull);
+      // Totals should come from row: ['101000', '', '', '', '', '', '93700']
+      // which is the row above ['', 'By', 'Closing Balance', '', '', '', '7300']
+      expect(result!.totalDebit, equals('101000'));
+      expect(result.totalCredit, equals('93700'));
+    });
+
     test('findLedgerByNumber returns null for non-existent customer', () {
       final result = CsvService.findLedgerByNumber(testData, '9999');
       
@@ -69,6 +80,9 @@ void main() {
       
       expect(result, isNotNull);
       expect(result!.customerName, equals('1139B.Pushpa Malliga Teacher'));
+      // Totals from row above closing balance: ['85363', '', '', '', '', '', '98724']
+      expect(result.totalDebit, equals('85363'));
+      expect(result.totalCredit, equals('98724'));
     });
 
     test('findLedgerByNumber handles lowercase search input', () {
@@ -82,6 +96,84 @@ void main() {
       
       expect(result, isNotNull);
       expect(result!.customerName, equals('1139B.Pushpa Malliga Teacher'));
+    });
+  });
+
+  group('CsvService - Customer Parsing', () {
+    test('parseCustomerData parses customer data correctly', () {
+      final testData = [
+        ['NAME', 'Mobile No', 'Area'],  // Header row
+        ['133.Arumugam', '12345466', 'NSK'],
+        ['254.Murugesan ', '98745621', 'Thiruverkadu'],
+      ];
+
+      final customers = CsvService.parseCustomerData(testData);
+      
+      expect(customers.length, equals(2));
+      expect(customers[0].customerId, equals('133'));
+      expect(customers[0].name, equals('Arumugam'));
+      expect(customers[0].mobileNumber, equals('12345466'));
+      expect(customers[1].customerId, equals('254'));
+      expect(customers[1].name, equals('Murugesan'));
+      expect(customers[1].mobileNumber, equals('98745621'));
+    });
+
+    test('parseCustomerData skips empty rows', () {
+      final testData = [
+        ['NAME', 'Mobile No'],
+        ['133.Arumugam', '12345466'],
+        ['', ''],  // Empty row
+        ['254.Murugesan', '98745621'],
+      ];
+
+      final customers = CsvService.parseCustomerData(testData);
+      
+      expect(customers.length, equals(2));
+    });
+
+    test('parseCustomerData handles empty data', () {
+      final customers = CsvService.parseCustomerData([]);
+      
+      expect(customers, isEmpty);
+    });
+  });
+
+  group('Customer', () {
+    test('fromRow parses customer ID and name correctly', () {
+      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      
+      expect(customer.customerId, equals('133'));
+      expect(customer.name, equals('Arumugam'));
+      expect(customer.mobileNumber, equals('12345466'));
+    });
+
+    test('fromRow handles names without dots', () {
+      final customer = Customer.fromRow(['Arumugam', '12345466']);
+      
+      expect(customer.customerId, equals(''));
+      expect(customer.name, equals('Arumugam'));
+    });
+
+    test('matchesSearch finds by customer ID', () {
+      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      
+      expect(customer.matchesSearch('133'), isTrue);
+      expect(customer.matchesSearch('999'), isFalse);
+    });
+
+    test('matchesSearch finds by name (case insensitive)', () {
+      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      
+      expect(customer.matchesSearch('Arumugam'), isTrue);
+      expect(customer.matchesSearch('arumu'), isTrue);
+      expect(customer.matchesSearch('ARUMUGAM'), isTrue);
+    });
+
+    test('matchesSearch finds by mobile number', () {
+      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      
+      expect(customer.matchesSearch('12345'), isTrue);
+      expect(customer.matchesSearch('99999'), isFalse);
     });
   });
 

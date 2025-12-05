@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screens/customer_list_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
 
@@ -66,9 +67,10 @@ class LedgerViewApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeScreen(),
+      home: const CustomerListScreen(),
       routes: {
         '/settings': (context) => const SettingsScreen(),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }

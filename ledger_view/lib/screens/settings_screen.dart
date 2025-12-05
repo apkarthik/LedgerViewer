@@ -140,6 +140,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
       if (clipboardData?.text?.isNotEmpty == true) {
         setState(() {
+          // Clear existing text first, then set new text
+          _urlController.clear();
           _urlController.text = clipboardData!.text!;
           _hasChanges = true;
         });
