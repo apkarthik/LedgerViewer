@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   LedgerResult? _ledgerResult;
-  String? _csvUrl;
+  String? _excelFilePath;
   bool _autoSearchTriggered = false;
 
   @override
@@ -28,10 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final url = await StorageService.getLedgerSheetUrl();
+    final path = await StorageService.getExcelFilePath();
     final lastSearch = await StorageService.getLastSearch();
     setState(() {
-      _csvUrl = url;
+      _excelFilePath = path;
       // If initialSearchQuery is provided, use it instead of last search
       if (widget.initialSearchQuery != null && widget.initialSearchQuery!.isNotEmpty) {
         _searchController.text = widget.initialSearchQuery!;
@@ -39,13 +39,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _searchController.text = lastSearch;
       }
     });
-    
     // Auto-trigger search if initialSearchQuery is provided
     if (widget.initialSearchQuery != null && 
         widget.initialSearchQuery!.isNotEmpty && 
         !_autoSearchTriggered &&
-        _csvUrl != null &&
-        _csvUrl!.isNotEmpty) {
+        _excelFilePath != null &&
+        _excelFilePath!.isNotEmpty) {
       _autoSearchTriggered = true;
       _searchLedger();
     }
@@ -61,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if (_csvUrl == null || _csvUrl!.isEmpty) {
-      _showError('Please configure Ledger Sheet URL in Settings');
+    if (_excelFilePath == null || _excelFilePath!.isEmpty) {
+      _showError('Please configure Excel file path in Settings');
       return;
     }
 
@@ -76,11 +75,10 @@ class _HomeScreenState extends State<HomeScreen> {
       // Save the search query
       await StorageService.saveLastSearch(searchQuery);
 
-      // Fetch fresh data from Google Drive
-      final csvData = await CsvService.fetchCsvData(_csvUrl!);
-
+      // Fetch data from the 'Ledger' sheet in the Excel file
+      final data = await CsvService.fetchExcelSheetData(_excelFilePath!, 'Ledger');
       // Find the ledger for the searched number
-      final result = CsvService.findLedgerByNumber(csvData, searchQuery);
+      final result = CsvService.findLedgerByNumber(data, searchQuery);
 
       if (result != null) {
         setState(() {

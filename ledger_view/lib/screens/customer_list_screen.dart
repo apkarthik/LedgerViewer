@@ -18,7 +18,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   bool _isLoading = false;
   bool _hasLoadedData = false;
   String? _errorMessage;
-  String? _csvUrl;
+  String? _excelFilePath;
 
   @override
   void initState() {
@@ -27,15 +27,15 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final url = await StorageService.getMasterSheetUrl();
+    final path = await StorageService.getExcelFilePath();
     setState(() {
-      _csvUrl = url;
+      _excelFilePath = path;
     });
   }
 
   Future<void> _loadCustomerData() async {
-    if (_csvUrl == null || _csvUrl!.isEmpty) {
-      _showError('Please configure Master Sheet URL in Settings first');
+    if (_excelFilePath == null || _excelFilePath!.isEmpty) {
+      _showError('Please configure Excel file path in Settings first');
       return;
     }
 
@@ -45,8 +45,9 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     });
 
     try {
-      // Fetch customers directly using the configured Master sheet URL
-      final customers = await CsvService.fetchCustomerData(_csvUrl!);
+      // Fetch customers from the 'Master' sheet in the Excel file
+      final data = await CsvService.fetchExcelSheetData(_excelFilePath!, 'Master');
+      final customers = CsvService.parseCustomerData(data);
 
       setState(() {
         _allCustomers = customers;
@@ -57,7 +58,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Error loading customer data: ${e.toString()}';
+        _errorMessage = 'Error loading customer data: e.toString()}';
       });
     }
   }

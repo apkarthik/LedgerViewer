@@ -10,8 +10,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController _masterSheetUrlController = TextEditingController();
-  final TextEditingController _ledgerSheetUrlController = TextEditingController();
+  final TextEditingController _excelFilePathController = TextEditingController();
   bool _isSaving = false;
   bool _hasChanges = false;
 
@@ -22,14 +21,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final masterUrl = await StorageService.getMasterSheetUrl();
-    final ledgerUrl = await StorageService.getLedgerSheetUrl();
+    final excelPath = await StorageService.getExcelFilePath();
     setState(() {
-      if (masterUrl != null) {
-        _masterSheetUrlController.text = masterUrl;
-      }
-      if (ledgerUrl != null) {
-        _ledgerSheetUrlController.text = ledgerUrl;
+      if (excelPath != null) {
+        _excelFilePathController.text = excelPath;
       }
     });
   }
@@ -38,10 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _isSaving = true;
     });
-
     try {
-      await StorageService.saveMasterSheetUrl(_masterSheetUrlController.text.trim());
-      await StorageService.saveLedgerSheetUrl(_ledgerSheetUrlController.text.trim());
+      await StorageService.saveExcelFilePath(_excelFilePathController.text.trim());
       setState(() {
         _isSaving = false;
         _hasChanges = false;
@@ -81,159 +74,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _resetSettings() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber, color: Colors.orange),
-            SizedBox(width: 12),
-            Text('Reset Settings'),
-          ],
-        ),
-        content: const Text(
-          'This will clear all saved settings including the sheet URLs and search history. Are you sure?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await StorageService.clearAll();
-      setState(() {
-        _masterSheetUrlController.clear();
-        _ledgerSheetUrlController.clear();
-        _hasChanges = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.refresh, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Settings have been reset'),
-              ],
-            ),
-            backgroundColor: Colors.orange.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _pasteFromClipboard(TextEditingController controller, String fieldName) async {
-    try {
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData?.text?.isNotEmpty == true) {
-        setState(() {
-          // Clear existing text first, then set new text
-          controller.clear();
-          controller.text = clipboardData!.text!;
-          _hasChanges = true;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.content_paste, color: Colors.white),
-                  const SizedBox(width: 12),
-                  Text('$fieldName URL pasted from clipboard'),
-                ],
-              ),
-              backgroundColor: Colors.green.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.warning_amber, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('Clipboard is empty'),
-                ],
-              ),
-              backgroundColor: Colors.orange.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error pasting from clipboard: $e'),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.grey.shade50,
-              Colors.white,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
+                // Excel File Path/URL Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.insert_drive_file,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Excel File Path or URL',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  Text(
+                                    'Provide the path or URL to the Excel file containing both Master and Ledger sheets.',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _excelFilePathController,
+                          decoration: const InputDecoration(
+                            hintText: '/path/to/ledger_file.xlsx or https://.../ledger_file.xlsx',
+                            prefixIcon: Icon(Icons.insert_drive_file),
+                          ),
+                          maxLines: 2,
+                          keyboardType: TextInputType.url,
+                          onChanged: (_) {
+                            setState(() {
+                              _hasChanges = true;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pasteFromClipboard(_excelFilePathController, 'Excel File Path'),
+                            icon: const Icon(Icons.content_paste),
+                            label: const Text('Paste from Clipboard'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              side: const BorderSide(color: Colors.blue),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
