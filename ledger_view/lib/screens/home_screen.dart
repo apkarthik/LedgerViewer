@@ -97,10 +97,16 @@ class HomeScreenState extends State<HomeScreen> {
       await StorageService.saveCachedLedgerData(ledgerData);
 
       // First, check if search query matches a mobile number in the customer list
+      // Normalize phone numbers by removing common formatting characters
+      final normalizedSearchQuery = searchQuery.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
       String actualSearchQuery = searchQuery;
       Customer? foundCustomer;
+      
       final matchedCustomer = _allCustomers.firstWhere(
-        (customer) => customer.mobileNumber == searchQuery,
+        (customer) {
+          final normalizedMobile = customer.mobileNumber.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
+          return normalizedMobile == normalizedSearchQuery;
+        },
         orElse: () => const Customer(customerId: '', name: '', mobileNumber: ''),
       );
       
@@ -110,10 +116,11 @@ class HomeScreenState extends State<HomeScreen> {
         foundCustomer = matchedCustomer;
       } else {
         // Try to find customer by ID or name
+        final upperSearchQuery = searchQuery.toUpperCase();
         foundCustomer = _allCustomers.firstWhere(
           (customer) => 
-            customer.customerId.toUpperCase() == searchQuery.toUpperCase() ||
-            customer.name.toUpperCase().contains(searchQuery.toUpperCase()),
+            customer.customerId.toUpperCase() == upperSearchQuery ||
+            customer.name.toUpperCase().contains(upperSearchQuery),
           orElse: () => const Customer(customerId: '', name: '', mobileNumber: ''),
         );
         if (foundCustomer.customerId.isEmpty) {
@@ -174,7 +181,7 @@ class HomeScreenState extends State<HomeScreen> {
           ),
           backgroundColor: Colors.blue.shade600,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 30),
+          duration: const Duration(seconds: 15),
         ),
       );
     }
@@ -538,7 +545,7 @@ class HomeScreenState extends State<HomeScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                           Text(
+                          Text(
                             _hasLoadedCustomers
                                 ? 'Enter a customer number, name, or mobile number to view their ledger'
                                 : 'Configure settings to get started',
