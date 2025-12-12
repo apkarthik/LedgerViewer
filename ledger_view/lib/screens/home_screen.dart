@@ -192,17 +192,20 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      // Fetch fresh master data from Google Sheets
-      final masterData = await CsvService.fetchCsvData(masterUrl);
+      // Fetch both master and ledger data concurrently for better performance
+      final results = await Future.wait([
+        CsvService.fetchCsvData(masterUrl),
+        CsvService.fetchCsvData(ledgerUrl),
+      ]);
+      
+      final masterData = results[0];
+      final ledgerData = results[1];
       
       // Update the cached master data
       await StorageService.saveCachedMasterData(masterData);
 
       // Parse and update customer list
       final customers = CsvService.parseCustomerData(masterData);
-      
-      // Fetch fresh ledger data from Google Sheets
-      final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
       
       // Update the cached ledger data
       await StorageService.saveCachedLedgerData(ledgerData);
