@@ -56,5 +56,27 @@ void main() {
       
       expect(result, equals('$baseUrl&gid=0'));
     });
+
+    test('replaces non-numeric GID in URL', () {
+      const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv&gid=sheet1';
+      const gid = 'newsheet';
+      final result = StorageService.buildSheetUrl(baseUrl, gid);
+      
+      expect(result, equals('https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv&gid=newsheet'));
+    });
+
+    test('trims baseUrl even when GID is null', () {
+      const baseUrl = '  https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv  ';
+      final result = StorageService.buildSheetUrl(baseUrl, null);
+      
+      expect(result, equals('https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv'));
+    });
+
+    test('trims baseUrl even when GID is empty', () {
+      const baseUrl = '  https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv  ';
+      final result = StorageService.buildSheetUrl(baseUrl, '  ');
+      
+      expect(result, equals('https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv'));
+    });
   });
 }

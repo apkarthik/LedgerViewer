@@ -121,19 +121,20 @@ class StorageService {
   /// Build full sheet URL from published document URL and GID
   /// If GID is empty, returns the base URL
   static String buildSheetUrl(String baseUrl, String? gid) {
+    final trimmedUrl = baseUrl.trim();
+    
     if (gid == null || gid.trim().isEmpty) {
-      return baseUrl;
+      return trimmedUrl;
     }
     
     final trimmedGid = gid.trim();
-    final trimmedUrl = baseUrl.trim();
     
     // Check if URL already has query parameters
     if (trimmedUrl.contains('?')) {
       // Check if gid parameter already exists
       if (trimmedUrl.contains('gid=')) {
-        // Replace existing gid parameter
-        return trimmedUrl.replaceAll(RegExp(r'gid=\d+'), 'gid=$trimmedGid');
+        // Replace existing gid parameter (matches any GID value, not just numeric)
+        return trimmedUrl.replaceAll(RegExp(r'gid=[^&]*'), 'gid=$trimmedGid');
       } else {
         // Add gid parameter
         return '$trimmedUrl&gid=$trimmedGid';
