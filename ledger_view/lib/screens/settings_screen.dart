@@ -471,7 +471,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'To get the CSV URL for each sheet:\n1. Open your Google Sheet\n2. Go to File → Share → Publish to web\n3. Select the specific sheet (Master or Ledger)\n4. Choose CSV format and publish\n5. Copy the generated link',
+                          'Advanced: To get the CSV URL for each sheet separately:\n1. Open your Google Sheet\n2. Go to File → Share → Publish to web\n3. Select the specific sheet (Master or Ledger)\n4. Choose CSV format and publish\n5. Copy the generated link',
                           style: TextStyle(
                             color: Colors.blue.shade900,
                             fontSize: 12,
