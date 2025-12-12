@@ -18,7 +18,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   bool _isLoading = false;
   bool _hasLoadedData = false;
   String? _errorMessage;
-  String? _excelFilePath;
+  String? _masterSheetUrl;
 
   @override
   void initState() {
@@ -27,15 +27,15 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final path = await StorageService.getExcelFilePath();
+    final masterUrl = await StorageService.getMasterSheetUrl();
     setState(() {
-      _excelFilePath = path;
+      _masterSheetUrl = masterUrl;
     });
   }
 
   Future<void> _loadCustomerData() async {
-    if (_excelFilePath == null || _excelFilePath!.isEmpty) {
-      _showError('Please configure Excel file path in Settings first');
+    if (_masterSheetUrl == null || _masterSheetUrl!.isEmpty) {
+      _showError('Please configure Master Sheet URL in Settings first');
       return;
     }
 
@@ -45,9 +45,8 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     });
 
     try {
-      // Fetch customers from the 'Master' sheet in the Excel file
-      final data = await CsvService.fetchExcelSheetData(_excelFilePath!, 'Master');
-      final customers = CsvService.parseCustomerData(data);
+      // Fetch customers from the Master sheet CSV URL
+      final customers = await CsvService.fetchCustomerData(_masterSheetUrl!);
 
       setState(() {
         _allCustomers = customers;
@@ -58,7 +57,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Error loading customer data: e.toString()}';
+        _errorMessage = 'Error loading customer data: ${e.toString()}';
       });
     }
   }
@@ -228,7 +227,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 const SizedBox(height: 8),
 
                 // Status indicator
-                if (_excelFilePath == null || _excelFilePath!.isEmpty)
+                if (_masterSheetUrl == null || _masterSheetUrl!.isEmpty)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(

@@ -4,6 +4,7 @@ class StorageService {
   static const String _excelFilePathKey = 'excel_file_path';
   static const String _lastSearchKey = 'last_search';
   static const String _csvUrlKey = 'csv_url';
+  static const String _masterSheetUrlKey = 'master_sheet_url';
   static const String _ledgerSheetUrlKey = 'ledger_sheet_url';
   static const String _migrationCompleteKey = 'migration_complete';
 
@@ -51,6 +52,31 @@ class StorageService {
   static Future<String?> getLastSearch() async {
     final prefs = await _getPrefs();
     return prefs.getString(_lastSearchKey);
+  }
+
+  /// Save the Master sheet URL
+  static Future<void> saveMasterSheetUrl(String url) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_masterSheetUrlKey, url);
+  }
+
+  /// Get the Master sheet URL
+  static Future<String?> getMasterSheetUrl() async {
+    final prefs = await _getPrefs();
+    return prefs.getString(_masterSheetUrlKey);
+  }
+
+  /// Save the Ledger sheet URL
+  static Future<void> saveLedgerSheetUrl(String url) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_ledgerSheetUrlKey, url);
+  }
+
+  /// Get the Ledger sheet URL
+  static Future<String?> getLedgerSheetUrl() async {
+    await _migrateIfNeeded();  // Ensure migration runs before getting URL
+    final prefs = await _getPrefs();
+    return prefs.getString(_ledgerSheetUrlKey);
   }
 
   /// Clear all settings (reset)

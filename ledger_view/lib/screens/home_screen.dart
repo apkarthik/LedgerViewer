@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   LedgerResult? _ledgerResult;
-  String? _excelFilePath;
+  String? _ledgerSheetUrl;
   bool _autoSearchTriggered = false;
 
   @override
@@ -28,10 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final path = await StorageService.getExcelFilePath();
+    final ledgerUrl = await StorageService.getLedgerSheetUrl();
     final lastSearch = await StorageService.getLastSearch();
     setState(() {
-      _excelFilePath = path;
+      _ledgerSheetUrl = ledgerUrl;
       // If initialSearchQuery is provided, use it instead of last search
       if (widget.initialSearchQuery != null && widget.initialSearchQuery!.isNotEmpty) {
         _searchController.text = widget.initialSearchQuery!;
@@ -43,8 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (widget.initialSearchQuery != null && 
         widget.initialSearchQuery!.isNotEmpty && 
         !_autoSearchTriggered &&
-        _excelFilePath != null &&
-        _excelFilePath!.isNotEmpty) {
+        _ledgerSheetUrl != null &&
+        _ledgerSheetUrl!.isNotEmpty) {
       _autoSearchTriggered = true;
       _searchLedger();
     }
@@ -60,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if (_excelFilePath == null || _excelFilePath!.isEmpty) {
-      _showError('Please configure Excel file path in Settings');
+    if (_ledgerSheetUrl == null || _ledgerSheetUrl!.isEmpty) {
+      _showError('Please configure Ledger Sheet URL in Settings');
       return;
     }
 
@@ -75,8 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // Save the search query
       await StorageService.saveLastSearch(searchQuery);
 
-      // Fetch data from the 'Ledger' sheet in the Excel file
-      final data = await CsvService.fetchExcelSheetData(_excelFilePath!, 'Ledger');
+      // Fetch CSV data from the Ledger sheet URL
+      final data = await CsvService.fetchCsvData(_ledgerSheetUrl!);
       // Find the ledger for the searched number
       final result = CsvService.findLedgerByNumber(data, searchQuery);
 
@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Status indicator
-                if (_excelFilePath == null || _excelFilePath!.isEmpty)
+                if (_ledgerSheetUrl == null || _ledgerSheetUrl!.isEmpty)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
