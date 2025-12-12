@@ -81,22 +81,22 @@ class CsvService {
     }
   }
 
-  /// Find ledger entries for a specific customer number
+  /// Find ledger entries for a specific customer number or name
   static LedgerResult? findLedgerByNumber(
     List<List<dynamic>> data,
-    String searchNumber,
+    String searchQuery,
   ) {
     if (data.isEmpty) return null;
 
-    // Normalize search number
-    final normalizedSearch = searchNumber.trim().toUpperCase();
+    // Normalize search query
+    final normalizedSearch = searchQuery.trim().toUpperCase();
     
     int startRow = -1;
     int endRow = -1;
     String customerName = '';
     String dateRange = '';
 
-    // Find the section that matches the search number
+    // Find the section that matches the search number or name
     for (int i = 0; i < data.length; i++) {
       final row = data[i];
       
@@ -105,16 +105,23 @@ class CsvService {
         // Column 1 contains the customer number and name (e.g., "1139B.Pushpa Malliga Teacher")
         final customerInfo = row.length > 1 ? row[1].toString().trim() : '';
         
-        // Extract the number part (before the first dot or space)
+        // Extract the number part and name part
         String extractedNumber = '';
+        String extractedName = '';
         if (customerInfo.contains('.')) {
-          extractedNumber = customerInfo.split('.')[0].trim().toUpperCase();
+          final parts = customerInfo.split('.');
+          extractedNumber = parts[0].trim().toUpperCase();
+          extractedName = parts.length > 1 ? parts[1].trim().toUpperCase() : '';
         } else {
           // Try splitting by space
-          extractedNumber = customerInfo.split(' ')[0].trim().toUpperCase();
+          final parts = customerInfo.split(' ');
+          extractedNumber = parts[0].trim().toUpperCase();
+          extractedName = parts.length > 1 ? parts.sublist(1).join(' ').trim().toUpperCase() : '';
         }
         
-        if (extractedNumber == normalizedSearch) {
+        // Match by number or name (partial match for name)
+        if (extractedNumber == normalizedSearch || 
+            (extractedName.isNotEmpty && extractedName.contains(normalizedSearch))) {
           startRow = i;
           customerName = customerInfo;
           dateRange = row.length > 2 ? row[2].toString().trim() : '';

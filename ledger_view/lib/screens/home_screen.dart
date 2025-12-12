@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/ledger_entry.dart';
+import '../models/customer.dart';
 import '../services/csv_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/ledger_display.dart';
@@ -18,35 +19,34 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   LedgerResult? _ledgerResult;
-  String? _ledgerSheetUrl;
+  List<Customer> _allCustomers = [];
+  bool _hasLoadedCustomers = false;
   bool _autoSearchTriggered = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _loadCustomerData();
   }
 
-  Future<void> _loadSettings() async {
-    final ledgerUrl = await StorageService.getLedgerSheetUrl();
-    final lastSearch = await StorageService.getLastSearch();
-    setState(() {
-      _ledgerSheetUrl = ledgerUrl;
-      // If initialSearchQuery is provided, use it instead of last search
+  Future<void> _loadCustomerData() async {
+    // Try to load cached customer data
+    final cachedData = await StorageService.getCachedMasterData();
+    if (cachedData != null) {
+      final customers = CsvService.parseCustomerData(cachedData);
+      setState(() {
+        _allCustomers = customers;
+        _hasLoadedCustomers = true;
+      });
+      
+      // If initialSearchQuery is provided, use it
       if (widget.initialSearchQuery != null && widget.initialSearchQuery!.isNotEmpty) {
         _searchController.text = widget.initialSearchQuery!;
-      } else if (lastSearch != null && lastSearch.isNotEmpty) {
-        _searchController.text = lastSearch;
+        if (!_autoSearchTriggered) {
+          _autoSearchTriggered = true;
+          _searchLedger();
+        }
       }
-    });
-    // Auto-trigger search if initialSearchQuery is provided
-    if (widget.initialSearchQuery != null && 
-        widget.initialSearchQuery!.isNotEmpty && 
-        !_autoSearchTriggered &&
-        _ledgerSheetUrl != null &&
-        _ledgerSheetUrl!.isNotEmpty) {
-      _autoSearchTriggered = true;
-      _searchLedger();
     }
   }
 
@@ -56,12 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
     
     final searchQuery = _searchController.text.trim();
     if (searchQuery.isEmpty) {
-      _showError('Please enter a customer number');
+      _showError('Please enter a customer number or name');
       return;
     }
 
-    if (_ledgerSheetUrl == null || _ledgerSheetUrl!.isEmpty) {
-      _showError('Please configure Ledger Sheet URL in Settings');
+    // Check if we have cached ledger data
+    final cachedLedgerData = await StorageService.getCachedLedgerData();
+    if (cachedLedgerData == null || cachedLedgerData.isEmpty) {
+      _showError('No data available. Please configure and save settings first.');
       return;
     }
 
@@ -75,10 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // Save the search query
       await StorageService.saveLastSearch(searchQuery);
 
-      // Fetch CSV data from the Ledger sheet URL
-      final data = await CsvService.fetchCsvData(_ledgerSheetUrl!);
-      // Find the ledger for the searched number
-      final result = CsvService.findLedgerByNumber(data, searchQuery);
+      // Find the ledger for the searched number or name
+      final result = CsvService.findLedgerByNumber(cachedLedgerData, searchQuery);
 
       if (result != null) {
         setState(() {
@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Search Card
+                // Search Card with Autocomplete
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
@@ -161,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Enter customer number to view ledger details',
+                          'Enter customer number or name',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Colors.grey.shade600,
                               ),
@@ -170,27 +170,100 @@ class _HomeScreenState extends State<HomeScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                decoration: InputDecoration(
-                                  hintText: 'e.g., 1139B',
-                                  prefixIcon: const Icon(Icons.search),
-                                  suffixIcon: _searchController.text.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            setState(() {
-                                              _ledgerResult = null;
-                                              _errorMessage = null;
-                                            });
+                              child: Autocomplete<Customer>(
+                                optionsBuilder: (TextEditingValue textEditingValue) {
+                                  if (textEditingValue.text.isEmpty) {
+                                    return const Iterable<Customer>.empty();
+                                  }
+                                  final query = textEditingValue.text.toLowerCase();
+                                  return _allCustomers.where((Customer customer) {
+                                    return customer.customerId.toLowerCase().contains(query) ||
+                                        customer.name.toLowerCase().contains(query);
+                                  });
+                                },
+                                displayStringForOption: (Customer customer) {
+                                  return '${customer.customerId} - ${customer.name}';
+                                },
+                                onSelected: (Customer customer) {
+                                  _searchController.text = customer.customerId;
+                                  _searchLedger();
+                                },
+                                fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                                  // Sync our controller with the autocomplete controller
+                                  _searchController.text = controller.text;
+                                  return TextField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    decoration: InputDecoration(
+                                      hintText: 'e.g., 1139B or Pushpa',
+                                      prefixIcon: const Icon(Icons.search),
+                                      suffixIcon: controller.text.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.clear),
+                                              onPressed: () {
+                                                controller.clear();
+                                                _searchController.clear();
+                                                setState(() {
+                                                  _ledgerResult = null;
+                                                  _errorMessage = null;
+                                                });
+                                              },
+                                            )
+                                          : null,
+                                    ),
+                                    textCapitalization: TextCapitalization.characters,
+                                    onSubmitted: (_) {
+                                      _searchController.text = controller.text;
+                                      _searchLedger();
+                                    },
+                                    onChanged: (value) {
+                                      _searchController.text = value;
+                                      setState(() {});
+                                    },
+                                  );
+                                },
+                                optionsViewBuilder: (context, onSelected, options) {
+                                  return Align(
+                                    alignment: Alignment.topLeft,
+                                    child: Material(
+                                      elevation: 4.0,
+                                      child: Container(
+                                        constraints: const BoxConstraints(maxHeight: 200),
+                                        width: MediaQuery.of(context).size.width - 32,
+                                        child: ListView.builder(
+                                          padding: EdgeInsets.zero,
+                                          shrinkWrap: true,
+                                          itemCount: options.length,
+                                          itemBuilder: (context, index) {
+                                            final customer = options.elementAt(index);
+                                            return ListTile(
+                                              title: Text(
+                                                customer.customerId,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF6366F1),
+                                                ),
+                                              ),
+                                              subtitle: Text(customer.name),
+                                              trailing: customer.mobileNumber.isNotEmpty
+                                                  ? Text(
+                                                      customer.mobileNumber,
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade600,
+                                                        fontSize: 12,
+                                                      ),
+                                                    )
+                                                  : null,
+                                              onTap: () {
+                                                onSelected(customer);
+                                              },
+                                            );
                                           },
-                                        )
-                                      : null,
-                                ),
-                                textCapitalization: TextCapitalization.characters,
-                                onSubmitted: (_) => _searchLedger(),
-                                onChanged: (_) => setState(() {}),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -227,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Status indicator
-                if (_ledgerSheetUrl == null || _ledgerSheetUrl!.isEmpty)
+                if (!_hasLoadedCustomers)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
@@ -238,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Please configure Ledger Sheet URL in Settings to start searching',
+                              'No data available. Please configure and save settings first.',
                               style: TextStyle(color: Colors.amber.shade900),
                             ),
                           ),
@@ -285,14 +358,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             'assets/images/ledger_view_logo.png',
                             width: 120,
                             height: 120,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.receipt_long,
+                                size: 100,
+                                color: Colors.grey.shade400,
+                              );
+                            },
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Enter a customer number to view their ledger',
+                            _hasLoadedCustomers
+                                ? 'Enter a customer number or name to view their ledger'
+                                : 'Configure settings to get started',
                             style: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: 16,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
