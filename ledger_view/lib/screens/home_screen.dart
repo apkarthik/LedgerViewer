@@ -32,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadCustomerData();
   }
 
+  /// Public method to reload customer data from storage
+  /// Called when settings are saved to refresh the UI
+  void reloadData() {
+    _loadCustomerData();
+  }
+
   Future<void> _loadCustomerData() async {
     // Try to load cached customer data
     final cachedData = await StorageService.getCachedMasterData();

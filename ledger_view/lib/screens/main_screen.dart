@@ -22,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
       SettingsScreen(
         onSettingsSaved: () {
           // Reload data in HomeScreen when settings are saved
-          _homeScreenKey.currentState?._loadCustomerData();
+          _homeScreenKey.currentState?.reloadData();
         },
       ),
       HomeScreen(
