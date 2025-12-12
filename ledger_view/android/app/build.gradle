@@ -1,3 +1,5 @@
+import java.util.concurrent.TimeUnit
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
@@ -47,24 +49,51 @@ android {
         versionName flutterVersionName
     }
 
+    def debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+    def debugKeystorePassword = System.getenv("ANDROID_DEBUG_KEYSTORE_PASSWORD") ?: "android"
+    def debugKeyAlias = System.getenv("ANDROID_DEBUG_KEY_ALIAS") ?: "androiddebugkey"
+    def debugKeyPassword = System.getenv("ANDROID_DEBUG_KEY_PASSWORD") ?: debugKeystorePassword
+    if (!debugKeystore.exists()) {
+        debugKeystore.parentFile.mkdirs()
+        def keytoolCmd = [
+                "keytool", "-genkeypair", "-v",
+                "-keystore", debugKeystore.absolutePath,
+                "-storepass", debugKeystorePassword,
+                "-alias", debugKeyAlias,
+                "-keypass", debugKeyPassword,
+                "-dname", "CN=Android Debug,O=Android,C=US",
+                "-validity", "10000",
+                "-storetype", "JKS"
+        ]
+        try {
+            def process = keytoolCmd.execute()
+            def stdout = new StringBuffer()
+            def stderr = new StringBuffer()
+            process.consumeProcessOutput(stdout, stderr)
+            if (!process.waitFor(30, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+                throw new GradleException("keytool generation timed out after 30 seconds")
+            }
+            if (process.exitValue() != 0) {
+                throw new GradleException("Failed to generate debug keystore (exit ${process.exitValue()}): ${stderr.toString().trim()}")
+            }
+        } catch (IOException e) {
+            throw new GradleException("keytool not found. Ensure JDK is installed and keytool is on PATH. Details: ${e.message}", e)
+        }
+    }
+
     signingConfigs {
         release {
-            def keystoreFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-            if (keystoreFile.exists()) {
-                storeFile keystoreFile
-                storePassword "android"
-                keyAlias "androiddebugkey"
-                keyPassword "android"
-            }
+            storeFile debugKeystore
+            storePassword debugKeystorePassword
+            keyAlias debugKeyAlias
+            keyPassword debugKeyPassword
         }
     }
 
     buildTypes {
         release {
-            // Only use signing config if keystore exists
-            if (signingConfigs.release.storeFile?.exists()) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }
