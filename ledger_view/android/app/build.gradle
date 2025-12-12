@@ -1,3 +1,5 @@
+import java.util.concurrent.TimeUnit
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
@@ -48,30 +50,44 @@ android {
     }
 
     def debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+    def debugKeystorePassword = System.getenv("ANDROID_DEBUG_KEYSTORE_PASSWORD") ?: "android"
+    def debugKeyAlias = System.getenv("ANDROID_DEBUG_KEY_ALIAS") ?: "androiddebugkey"
+    def debugKeyPassword = System.getenv("ANDROID_DEBUG_KEY_PASSWORD") ?: debugKeystorePassword
     if (!debugKeystore.exists()) {
         debugKeystore.parentFile.mkdirs()
-        def process = [
+        def keytoolCmd = [
                 "keytool", "-genkeypair", "-v",
                 "-keystore", debugKeystore.absolutePath,
-                "-storepass", "android",
-                "-alias", "androiddebugkey",
-                "-keypass", "android",
+                "-storepass", debugKeystorePassword,
+                "-alias", debugKeyAlias,
+                "-keypass", debugKeyPassword,
                 "-dname", "CN=Android Debug,O=Android,C=US",
                 "-validity", "10000",
                 "-storetype", "JKS"
-        ].execute()
-        process.waitFor()
-        if (process.exitValue() != 0) {
-            throw new GradleException("Failed to generate debug keystore: ${process.err.text}")
+        ]
+        try {
+            def process = keytoolCmd.execute()
+            def stdout = new StringBuffer()
+            def stderr = new StringBuffer()
+            process.consumeProcessOutput(stdout, stderr)
+            if (!process.waitFor(30, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+                throw new GradleException("keytool generation timed out after 30 seconds")
+            }
+            if (process.exitValue() != 0) {
+                throw new GradleException("Failed to generate debug keystore (exit ${process.exitValue()}): ${stderr.toString().trim()}")
+            }
+        } catch (IOException e) {
+            throw new GradleException("keytool not found. Ensure JDK is installed and keytool is on PATH. Details: ${e.message}", e)
         }
     }
 
     signingConfigs {
         release {
             storeFile debugKeystore
-            storePassword "android"
-            keyAlias "androiddebugkey"
-            keyPassword "android"
+            storePassword debugKeystorePassword
+            keyAlias debugKeyAlias
+            keyPassword debugKeyPassword
         }
     }
 
