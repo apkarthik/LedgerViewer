@@ -16,12 +16,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const int _minSearchChars = 3; // Minimum characters to trigger autocomplete
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
   LedgerResult? _ledgerResult;
   List<Customer> _allCustomers = [];
   bool _hasLoadedCustomers = false;
+  bool _hasLoadedLedgerData = false;
   bool _autoSearchTriggered = false;
 
   @override
@@ -39,7 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final customers = CsvService.parseCustomerData(cachedData);
       setState(() {
         _allCustomers = customers;
-        _hasLoadedCustomers = cachedLedgerData != null && cachedLedgerData.isNotEmpty;
+        _hasLoadedCustomers = customers.isNotEmpty;
+        _hasLoadedLedgerData = cachedLedgerData != null && cachedLedgerData.isNotEmpty;
       });
       
       // If initialSearchQuery is provided, use it
@@ -179,8 +182,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 16),
                         Autocomplete<Customer>(
                           optionsBuilder: (TextEditingValue textEditingValue) {
-                            // Only show suggestions after typing at least 3 characters
-                            if (textEditingValue.text.isEmpty || textEditingValue.text.length < 3) {
+                            // Only show suggestions after typing at least minimum characters
+                            if (textEditingValue.text.isEmpty || textEditingValue.text.length < _minSearchChars) {
                               return const Iterable<Customer>.empty();
                             }
                             final query = textEditingValue.text.toLowerCase();
@@ -281,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Status indicator
-                if (!_hasLoadedCustomers)
+                if (!_hasLoadedLedgerData)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
