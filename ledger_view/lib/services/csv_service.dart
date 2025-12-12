@@ -1,9 +1,29 @@
 import 'package:http/http.dart' as http;
 import 'package:csv/csv.dart';
+import 'package:excel/excel.dart';
+import 'dart:io';
 import '../models/ledger_entry.dart';
 import '../models/customer.dart';
 
 class CsvService {
+  /// Fetch and parse data from an Excel file (.xlsx) and select a sheet
+  static Future<List<List<dynamic>>> fetchExcelSheetData(String filePath, String sheetName) async {
+    // filePath: local path to .xlsx file
+    // sheetName: name of the sheet to read (e.g., 'input' or 'output')
+    final bytes = await _readFileBytes(filePath);
+    final excel = Excel.decodeBytes(bytes);
+    final sheet = excel.sheets[sheetName];
+    if (sheet == null) {
+      throw Exception('Sheet "$sheetName" not found in $filePath');
+    }
+    // Convert Excel rows to List<List<dynamic>>
+    return sheet.rows.map((row) => row.map((cell) => cell?.value ?? '').toList()).toList();
+  }
+
+  static Future<List<int>> _readFileBytes(String filePath) async {
+    // For Flutter mobile/desktop
+    return await File(filePath).readAsBytes();
+  }
   /// Fetch and parse customer data from the Master sheet
   /// Column A contains "CustomerID.Name" format, Column B contains Mobile Number
   static Future<List<Customer>> fetchCustomerData(String url) async {
