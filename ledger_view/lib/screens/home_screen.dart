@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Status indicator
-                if (_csvUrl == null || _csvUrl!.isEmpty)
+                if (_excelFilePath == null || _excelFilePath!.isEmpty)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
