@@ -236,40 +236,48 @@ class _HomeScreenState extends State<HomeScreen> {
                           optionsViewBuilder: (context, onSelected, options) {
                             return Align(
                               alignment: Alignment.topLeft,
-                              child: Material(
-                                elevation: 4.0,
-                                child: Container(
-                                  constraints: const BoxConstraints(maxHeight: 200),
-                                  width: MediaQuery.of(context).size.width - 32,
-                                  child: ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    shrinkWrap: true,
-                                    itemCount: options.length,
-                                    itemBuilder: (context, index) {
-                                      final customer = options.elementAt(index);
-                                      return ListTile(
-                                        title: Text(
-                                          customer.customerId,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF6366F1),
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Material(
+                                  elevation: 8.0,
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  color: Colors.white,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxHeight: 200,
+                                      maxWidth: MediaQuery.of(context).size.width - 72,
+                                    ),
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: options.length,
+                                      itemBuilder: (context, index) {
+                                        final customer = options.elementAt(index);
+                                        return ListTile(
+                                          dense: true,
+                                          title: Text(
+                                            customer.customerId,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF6366F1),
+                                            ),
                                           ),
-                                        ),
-                                        subtitle: Text(customer.name),
-                                        trailing: customer.mobileNumber.isNotEmpty
-                                            ? Text(
-                                                customer.mobileNumber,
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade600,
-                                                  fontSize: 12,
-                                                ),
-                                              )
-                                            : null,
-                                        onTap: () {
-                                          onSelected(customer);
-                                        },
-                                      );
-                                    },
+                                          subtitle: Text(customer.name),
+                                          trailing: customer.mobileNumber.isNotEmpty
+                                              ? Text(
+                                                  customer.mobileNumber,
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                    fontSize: 12,
+                                                  ),
+                                                )
+                                              : null,
+                                          onTap: () {
+                                            onSelected(customer);
+                                          },
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
