@@ -157,10 +157,12 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshLedgerData() async {
-    // Get the ledger sheet URL
+    // Get both master and ledger sheet URLs
+    final masterUrl = await StorageService.getMasterSheetUrl();
     final ledgerUrl = await StorageService.getLedgerSheetUrl();
-    if (ledgerUrl == null || ledgerUrl.isEmpty) {
-      _showError('Please configure Ledger Sheet URL in Settings first');
+    
+    if (masterUrl == null || masterUrl.isEmpty || ledgerUrl == null || ledgerUrl.isEmpty) {
+      _showError('Please configure both Master and Ledger Sheet URLs in Settings first');
       return;
     }
 
@@ -179,7 +181,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               SizedBox(width: 12),
-              Text('Refreshing ledger data from Google Sheets...'),
+              Text('Refreshing data from Google Sheets...'),
             ],
           ),
           backgroundColor: Colors.blue.shade600,
@@ -190,14 +192,25 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      // Fetch fresh ledger data from Google Sheets
-      final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
+      // Fetch both master and ledger data concurrently for better performance
+      final [masterData, ledgerData] = await Future.wait([
+        CsvService.fetchCsvData(masterUrl),
+        CsvService.fetchCsvData(ledgerUrl),
+      ]);
+      
+      // Update the cached master data
+      await StorageService.saveCachedMasterData(masterData);
+
+      // Parse and update customer list
+      final customers = CsvService.parseCustomerData(masterData);
       
       // Update the cached ledger data
       await StorageService.saveCachedLedgerData(ledgerData);
 
-      // Update state to reflect we have ledger data
+      // Update state to reflect we have both master and ledger data
       setState(() {
+        _allCustomers = customers;
+        _hasLoadedCustomers = customers.isNotEmpty;
         _hasLedgerUrl = true;
       });
 
@@ -209,7 +222,7 @@ class HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Ledger data refreshed successfully'),
+                Text('Master and ledger data refreshed successfully'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -266,7 +279,7 @@ class HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshLedgerData,
-            tooltip: 'Refresh Ledger Data',
+            tooltip: 'Refresh Master and Ledger Data',
           ),
           IconButton(
             icon: const Icon(Icons.settings),
@@ -295,25 +308,10 @@ class HomeScreenState extends State<HomeScreen> {
                 // Search Card with Autocomplete
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Search Customer Ledger',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1F2937),
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Enter customer number, name, or mobile number',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
-                        ),
-                        const SizedBox(height: 16),
                         Autocomplete<Customer>(
                           optionsBuilder: (TextEditingValue textEditingValue) {
                             // Only show suggestions after typing at least minimum characters
@@ -473,50 +471,45 @@ class HomeScreenState extends State<HomeScreen> {
                 if (_selectedCustomer != null)
                   Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF6366F1).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Color(0xFF6366F1),
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Customer Details',
-                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF1F2937),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                    child: Theme(
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        initiallyExpanded: false,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6366F1).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          const SizedBox(height: 12),
-                          _buildDetailRow('Customer ID', _selectedCustomer!.customerId),
-                          const SizedBox(height: 8),
-                          _buildDetailRow('Name', _selectedCustomer!.name),
-                          if (_selectedCustomer!.mobileNumber.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            _buildDetailRow('Mobile Number', _selectedCustomer!.mobileNumber),
-                          ],
+                          child: const Icon(
+                            Icons.person,
+                            color: Color(0xFF6366F1),
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          'Customer Details',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1F2937),
+                              ),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildDetailRow('Customer ID', _selectedCustomer!.customerId),
+                                const SizedBox(height: 8),
+                                _buildDetailRow('Name', _selectedCustomer!.name),
+                                if (_selectedCustomer!.mobileNumber.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow('Mobile Number', _selectedCustomer!.mobileNumber),
+                                ],
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
