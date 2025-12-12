@@ -74,6 +74,7 @@ class StorageService {
 
   /// Get the Ledger sheet URL
   static Future<String?> getLedgerSheetUrl() async {
+    await _migrateIfNeeded();  // Ensure migration runs before getting URL
     final prefs = await _getPrefs();
     return prefs.getString(_ledgerSheetUrlKey);
   }
