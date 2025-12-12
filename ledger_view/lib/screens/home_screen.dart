@@ -24,7 +24,7 @@ class HomeScreenState extends State<HomeScreen> {
   Customer? _selectedCustomer;
   List<Customer> _allCustomers = [];
   bool _hasLoadedCustomers = false;
-  bool _hasLoadedLedgerData = false;
+  bool _hasLedgerUrl = false;
   bool _autoSearchTriggered = false;
 
   @override
@@ -42,14 +42,14 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCustomerData() async {
     // Try to load cached customer data
     final cachedData = await StorageService.getCachedMasterData();
-    final cachedLedgerData = await StorageService.getCachedLedgerData();
+    final ledgerUrl = await StorageService.getLedgerSheetUrl();
     
     if (cachedData != null) {
       final customers = CsvService.parseCustomerData(cachedData);
       setState(() {
         _allCustomers = customers;
         _hasLoadedCustomers = customers.isNotEmpty;
-        _hasLoadedLedgerData = cachedLedgerData != null && cachedLedgerData.isNotEmpty;
+        _hasLedgerUrl = ledgerUrl != null && ledgerUrl.isNotEmpty;
       });
       
       // If initialSearchQuery is provided, use it
@@ -188,7 +188,7 @@ class HomeScreenState extends State<HomeScreen> {
 
       // Update state to reflect we have ledger data
       setState(() {
-        _hasLoadedLedgerData = true;
+        _hasLedgerUrl = true;
       });
 
       if (mounted) {
@@ -418,7 +418,7 @@ class HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Status indicator
-                if (!_hasLoadedLedgerData)
+                if (!_hasLedgerUrl)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
