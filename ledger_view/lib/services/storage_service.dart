@@ -3,6 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class StorageService {
   static const String _excelFilePathKey = 'excel_file_path';
   static const String _lastSearchKey = 'last_search';
+  static const String _csvUrlKey = 'csv_url';
+  static const String _ledgerSheetUrlKey = 'ledger_sheet_url';
+  static const String _migrationCompleteKey = 'migration_complete';
 
   static Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
