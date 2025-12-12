@@ -24,9 +24,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final excelPath = await StorageService.getExcelFilePath();
+    final masterUrl = await StorageService.getMasterSheetUrl();
+    final ledgerUrl = await StorageService.getLedgerSheetUrl();
     setState(() {
       if (excelPath != null) {
         _excelFilePathController.text = excelPath;
+      }
+      if (masterUrl != null) {
+        _masterSheetUrlController.text = masterUrl;
+      }
+      if (ledgerUrl != null) {
+        _ledgerSheetUrlController.text = ledgerUrl;
       }
     });
   }
@@ -37,6 +45,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
     try {
       await StorageService.saveExcelFilePath(_excelFilePathController.text.trim());
+      await StorageService.saveMasterSheetUrl(_masterSheetUrlController.text.trim());
+      await StorageService.saveLedgerSheetUrl(_ledgerSheetUrlController.text.trim());
       setState(() {
         _isSaving = false;
         _hasChanges = false;

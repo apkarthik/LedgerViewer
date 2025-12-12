@@ -34,8 +34,8 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   }
 
   Future<void> _loadCustomerData() async {
-    if (_masterSheetUrl == null || _masterSheetUrl!.isEmpty) {
-      _showError('Please configure Master Sheet URL in Settings first');
+    if (_excelFilePath == null || _excelFilePath!.isEmpty) {
+      _showError('Please configure Excel file path in Settings first');
       return;
     }
 
@@ -45,8 +45,9 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     });
 
     try {
-      // Fetch customers from the Master sheet CSV URL
-      final customers = await CsvService.fetchCustomerData(_masterSheetUrl!);
+      // Fetch customers from the 'Master' sheet in the Excel file
+      final data = await CsvService.fetchExcelSheetData(_excelFilePath!, 'Master');
+      final customers = CsvService.parseCustomerData(data);
 
       setState(() {
         _allCustomers = customers;
@@ -57,7 +58,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Error loading customer data: ${e.toString()}';
+        _errorMessage = 'Error loading customer data: e.toString()}';
       });
     }
   }
@@ -227,7 +228,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 const SizedBox(height: 8),
 
                 // Status indicator
-                if (_masterSheetUrl == null || _masterSheetUrl!.isEmpty)
+                if (_excelFilePath == null || _excelFilePath!.isEmpty)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
