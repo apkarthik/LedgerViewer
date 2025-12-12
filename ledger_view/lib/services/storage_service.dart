@@ -97,7 +97,7 @@ class StorageService {
     
     try {
       final decoded = jsonDecode(jsonString) as List<dynamic>;
-      return decoded.map((row) => (row as List<dynamic>)).toList();
+      return decoded.cast<List<dynamic>>();
     } catch (e) {
       return null;
     }
@@ -118,7 +118,7 @@ class StorageService {
     
     try {
       final decoded = jsonDecode(jsonString) as List<dynamic>;
-      return decoded.map((row) => (row as List<dynamic>)).toList();
+      return decoded.cast<List<dynamic>>();
     } catch (e) {
       return null;
     }
