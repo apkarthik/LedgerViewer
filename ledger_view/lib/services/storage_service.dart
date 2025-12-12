@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class StorageService {
   static const String _excelFilePathKey = 'excel_file_path';
@@ -7,6 +8,8 @@ class StorageService {
   static const String _masterSheetUrlKey = 'master_sheet_url';
   static const String _ledgerSheetUrlKey = 'ledger_sheet_url';
   static const String _migrationCompleteKey = 'migration_complete';
+  static const String _cachedMasterDataKey = 'cached_master_data';
+  static const String _cachedLedgerDataKey = 'cached_ledger_data';
 
   static Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
@@ -77,6 +80,48 @@ class StorageService {
     await _migrateIfNeeded();  // Ensure migration runs before getting URL
     final prefs = await _getPrefs();
     return prefs.getString(_ledgerSheetUrlKey);
+  }
+
+  /// Save cached Master data (customer list) to local storage
+  static Future<void> saveCachedMasterData(List<List<dynamic>> data) async {
+    final prefs = await _getPrefs();
+    final jsonString = jsonEncode(data);
+    await prefs.setString(_cachedMasterDataKey, jsonString);
+  }
+
+  /// Get cached Master data from local storage
+  static Future<List<List<dynamic>>?> getCachedMasterData() async {
+    final prefs = await _getPrefs();
+    final jsonString = prefs.getString(_cachedMasterDataKey);
+    if (jsonString == null) return null;
+    
+    try {
+      final decoded = jsonDecode(jsonString) as List<dynamic>;
+      return decoded.cast<List<dynamic>>();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Save cached Ledger data to local storage
+  static Future<void> saveCachedLedgerData(List<List<dynamic>> data) async {
+    final prefs = await _getPrefs();
+    final jsonString = jsonEncode(data);
+    await prefs.setString(_cachedLedgerDataKey, jsonString);
+  }
+
+  /// Get cached Ledger data from local storage
+  static Future<List<List<dynamic>>?> getCachedLedgerData() async {
+    final prefs = await _getPrefs();
+    final jsonString = prefs.getString(_cachedLedgerDataKey);
+    if (jsonString == null) return null;
+    
+    try {
+      final decoded = jsonDecode(jsonString) as List<dynamic>;
+      return decoded.cast<List<dynamic>>();
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Clear all settings (reset)

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'customer_list_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 
@@ -11,11 +10,10 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 1; // Start with Customer List (index 1)
+  int _selectedIndex = 1; // Start with Ledger Search (index 1)
 
   final List<Widget> _screens = [
     const SettingsScreen(),
-    const CustomerListScreen(),
     const HomeScreen(),
   ];
 
@@ -44,12 +42,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Settings',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Customers',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.search),
-            label: 'Ledger Search',
+            label: 'Ledger',
           ),
         ],
       ),
