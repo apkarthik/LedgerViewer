@@ -193,13 +193,10 @@ class HomeScreenState extends State<HomeScreen> {
 
     try {
       // Fetch both master and ledger data concurrently for better performance
-      final results = await Future.wait([
+      final [masterData, ledgerData] = await Future.wait([
         CsvService.fetchCsvData(masterUrl),
         CsvService.fetchCsvData(ledgerUrl),
       ]);
-      
-      final masterData = results[0];
-      final ledgerData = results[1];
       
       // Update the cached master data
       await StorageService.saveCachedMasterData(masterData);
