@@ -7,20 +7,23 @@ import '../widgets/ledger_display.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? initialSearchQuery;
+  final VoidCallback? onSettingsTap;
 
-  const HomeScreen({super.key, this.initialSearchQuery});
+  const HomeScreen({super.key, this.initialSearchQuery, this.onSettingsTap});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const int _minSearchChars = 3; // Minimum characters to trigger autocomplete
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
   LedgerResult? _ledgerResult;
   List<Customer> _allCustomers = [];
   bool _hasLoadedCustomers = false;
+  bool _hasLoadedLedgerData = false;
   bool _autoSearchTriggered = false;
 
   @override
@@ -32,11 +35,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCustomerData() async {
     // Try to load cached customer data
     final cachedData = await StorageService.getCachedMasterData();
+    final cachedLedgerData = await StorageService.getCachedLedgerData();
+    
     if (cachedData != null) {
       final customers = CsvService.parseCustomerData(cachedData);
       setState(() {
         _allCustomers = customers;
-        _hasLoadedCustomers = true;
+        _hasLoadedCustomers = customers.isNotEmpty;
+        _hasLoadedLedgerData = cachedLedgerData != null && cachedLedgerData.isNotEmpty;
       });
       
       // If initialSearchQuery is provided, use it
@@ -127,6 +133,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: widget.onSettingsTap,
+            tooltip: 'Go to Settings',
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -167,130 +180,101 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Autocomplete<Customer>(
-                                optionsBuilder: (TextEditingValue textEditingValue) {
-                                  if (textEditingValue.text.isEmpty) {
-                                    return const Iterable<Customer>.empty();
-                                  }
-                                  final query = textEditingValue.text.toLowerCase();
-                                  return _allCustomers.where((Customer customer) {
-                                    return customer.customerId.toLowerCase().contains(query) ||
-                                        customer.name.toLowerCase().contains(query);
-                                  });
-                                },
-                                displayStringForOption: (Customer customer) {
-                                  return '${customer.customerId} - ${customer.name}';
-                                },
-                                onSelected: (Customer customer) {
-                                  _searchController.text = customer.customerId;
-                                  _searchLedger();
-                                },
-                                fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                                  // Sync our controller with the autocomplete controller
-                                  _searchController.text = controller.text;
-                                  return TextField(
-                                    controller: controller,
-                                    focusNode: focusNode,
-                                    decoration: InputDecoration(
-                                      hintText: 'e.g., 1139B or Pushpa',
-                                      prefixIcon: const Icon(Icons.search),
-                                      suffixIcon: controller.text.isNotEmpty
-                                          ? IconButton(
-                                              icon: const Icon(Icons.clear),
-                                              onPressed: () {
-                                                controller.clear();
-                                                _searchController.clear();
-                                                setState(() {
-                                                  _ledgerResult = null;
-                                                  _errorMessage = null;
-                                                });
-                                              },
-                                            )
-                                          : null,
-                                    ),
-                                    textCapitalization: TextCapitalization.characters,
-                                    onSubmitted: (_) {
-                                      _searchController.text = controller.text;
-                                      _searchLedger();
-                                    },
-                                    onChanged: (value) {
-                                      _searchController.text = value;
-                                      setState(() {});
-                                    },
-                                  );
-                                },
-                                optionsViewBuilder: (context, onSelected, options) {
-                                  return Align(
-                                    alignment: Alignment.topLeft,
-                                    child: Material(
-                                      elevation: 4.0,
-                                      child: Container(
-                                        constraints: const BoxConstraints(maxHeight: 200),
-                                        width: MediaQuery.of(context).size.width - 32,
-                                        child: ListView.builder(
-                                          padding: EdgeInsets.zero,
-                                          shrinkWrap: true,
-                                          itemCount: options.length,
-                                          itemBuilder: (context, index) {
-                                            final customer = options.elementAt(index);
-                                            return ListTile(
-                                              title: Text(
-                                                customer.customerId,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF6366F1),
-                                                ),
-                                              ),
-                                              subtitle: Text(customer.name),
-                                              trailing: customer.mobileNumber.isNotEmpty
-                                                  ? Text(
-                                                      customer.mobileNumber,
-                                                      style: TextStyle(
-                                                        color: Colors.grey.shade600,
-                                                        fontSize: 12,
-                                                      ),
-                                                    )
-                                                  : null,
-                                              onTap: () {
-                                                onSelected(customer);
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
+                        Autocomplete<Customer>(
+                          optionsBuilder: (TextEditingValue textEditingValue) {
+                            // Only show suggestions after typing at least minimum characters
+                            if (textEditingValue.text.isEmpty || textEditingValue.text.length < _minSearchChars) {
+                              return const Iterable<Customer>.empty();
+                            }
+                            final query = textEditingValue.text.toLowerCase();
+                            return _allCustomers.where((Customer customer) {
+                              return customer.customerId.toLowerCase().contains(query) ||
+                                  customer.name.toLowerCase().contains(query);
+                            });
+                          },
+                          displayStringForOption: (Customer customer) {
+                            return '${customer.customerId} - ${customer.name}';
+                          },
+                          onSelected: (Customer customer) {
+                            _searchController.text = customer.customerId;
+                            _searchLedger();
+                          },
+                          fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                            // Sync our controller with the autocomplete controller
+                            _searchController.text = controller.text;
+                            return TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
+                                hintText: 'e.g., 1139B or Pushpa',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: controller.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          controller.clear();
+                                          _searchController.clear();
+                                          setState(() {
+                                            _ledgerResult = null;
+                                            _errorMessage = null;
+                                          });
+                                        },
+                                      )
+                                    : null,
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: _isLoading ? null : _searchLedger,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6366F1),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 16,
+                              textCapitalization: TextCapitalization.characters,
+                              onSubmitted: (_) {
+                                _searchController.text = controller.text;
+                                _searchLedger();
+                              },
+                              onChanged: (value) {
+                                _searchController.text = value;
+                                setState(() {});
+                              },
+                            );
+                          },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4.0,
+                                child: Container(
+                                  constraints: const BoxConstraints(maxHeight: 200),
+                                  width: MediaQuery.of(context).size.width - 32,
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.zero,
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    itemBuilder: (context, index) {
+                                      final customer = options.elementAt(index);
+                                      return ListTile(
+                                        title: Text(
+                                          customer.customerId,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF6366F1),
+                                          ),
+                                        ),
+                                        subtitle: Text(customer.name),
+                                        trailing: customer.mobileNumber.isNotEmpty
+                                            ? Text(
+                                                customer.mobileNumber,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 12,
+                                                ),
+                                              )
+                                            : null,
+                                        onTap: () {
+                                          onSelected(customer);
+                                        },
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
-                                      ),
-                                    )
-                                  : const Text('Search'),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -300,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Status indicator
-                if (!_hasLoadedCustomers)
+                if (!_hasLoadedLedgerData)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
