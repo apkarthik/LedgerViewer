@@ -11,7 +11,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 1; // Start with Ledger Search (index 1)
-  final GlobalKey<_HomeScreenState> _homeScreenKey = GlobalKey<_HomeScreenState>();
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
 
   late final List<Widget> _screens;
 

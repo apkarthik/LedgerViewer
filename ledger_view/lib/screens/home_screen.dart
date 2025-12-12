@@ -12,10 +12,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.initialSearchQuery, this.onSettingsTap});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   static const int _minSearchChars = 1; // Minimum characters to trigger autocomplete
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
