@@ -17,6 +17,9 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   static const int _minSearchChars = 1; // Minimum characters to trigger autocomplete
+  static const Duration _refreshTimeout = Duration(seconds: 15);
+  static final RegExp _phoneNormalizationRegex = RegExp(r'[\s\-\+\(\)]');
+  
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
@@ -98,13 +101,13 @@ class HomeScreenState extends State<HomeScreen> {
 
       // First, check if search query matches a mobile number in the customer list
       // Normalize phone numbers by removing common formatting characters
-      final normalizedSearchQuery = searchQuery.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
+      final normalizedSearchQuery = searchQuery.replaceAll(_phoneNormalizationRegex, '');
       String actualSearchQuery = searchQuery;
       Customer? foundCustomer;
       
       final matchedCustomer = _allCustomers.firstWhere(
         (customer) {
-          final normalizedMobile = customer.mobileNumber.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
+          final normalizedMobile = customer.mobileNumber.replaceAll(_phoneNormalizationRegex, '');
           return normalizedMobile == normalizedSearchQuery;
         },
         orElse: () => const Customer(customerId: '', name: '', mobileNumber: ''),
@@ -181,7 +184,7 @@ class HomeScreenState extends State<HomeScreen> {
           ),
           backgroundColor: Colors.blue.shade600,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 15),
+          duration: _refreshTimeout,
         ),
       );
     }
