@@ -228,7 +228,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 const SizedBox(height: 8),
 
                 // Status indicator
-                if (_csvUrl == null || _csvUrl!.isEmpty)
+                if (_excelFilePath == null || _excelFilePath!.isEmpty)
                   Card(
                     color: Colors.amber.shade50,
                     child: Padding(
