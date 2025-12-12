@@ -4,7 +4,9 @@ import '../services/storage_service.dart';
 import '../services/csv_service.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final VoidCallback? onSettingsSaved;
+
+  const SettingsScreen({super.key, this.onSettingsSaved});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -141,6 +143,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         );
+        
+        // Notify that settings were saved
+        widget.onSettingsSaved?.call();
       }
     } catch (e) {
       setState(() {

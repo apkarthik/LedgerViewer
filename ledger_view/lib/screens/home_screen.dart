@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const int _minSearchChars = 3; // Minimum characters to trigger autocomplete
+  static const int _minSearchChars = 1; // Minimum characters to trigger autocomplete
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;

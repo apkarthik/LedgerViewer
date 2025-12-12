@@ -11,6 +11,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 1; // Start with Ledger Search (index 1)
+  final GlobalKey<_HomeScreenState> _homeScreenKey = GlobalKey<_HomeScreenState>();
 
   late final List<Widget> _screens;
 
@@ -18,8 +19,14 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _screens = [
-      const SettingsScreen(),
+      SettingsScreen(
+        onSettingsSaved: () {
+          // Reload data in HomeScreen when settings are saved
+          _homeScreenKey.currentState?._loadCustomerData();
+        },
+      ),
       HomeScreen(
+        key: _homeScreenKey,
         onSettingsTap: () {
           setState(() {
             _selectedIndex = 0;
