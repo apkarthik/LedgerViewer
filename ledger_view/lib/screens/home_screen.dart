@@ -73,9 +73,9 @@ class HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Check if we have cached ledger data
-    final cachedLedgerData = await StorageService.getCachedLedgerData();
-    if (cachedLedgerData == null || cachedLedgerData.isEmpty) {
+    // Get ledger sheet URL to fetch real-time data
+    final ledgerUrl = await StorageService.getLedgerSheetUrl();
+    if (ledgerUrl == null || ledgerUrl.isEmpty) {
       _showError('No data available. Please configure and save settings first.');
       return;
     }
@@ -89,6 +89,12 @@ class HomeScreenState extends State<HomeScreen> {
     try {
       // Save the search query
       await StorageService.saveLastSearch(searchQuery);
+
+      // Fetch fresh ledger data from Google Sheets (real-time)
+      final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
+      
+      // Update cached ledger data (for reference, but always fetch fresh on search)
+      await StorageService.saveCachedLedgerData(ledgerData);
 
       // First, check if search query matches a mobile number in the customer list
       String actualSearchQuery = searchQuery;
@@ -116,7 +122,7 @@ class HomeScreenState extends State<HomeScreen> {
       }
 
       // Find the ledger for the searched number or name
-      final result = CsvService.findLedgerByNumber(cachedLedgerData, actualSearchQuery);
+      final result = CsvService.findLedgerByNumber(ledgerData, actualSearchQuery);
 
       if (result != null) {
         setState(() {
