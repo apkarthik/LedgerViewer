@@ -357,7 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 hintText: '0 (optional)',
                                 prefixIcon: Icon(Icons.tag),
                               ),
-                              keyboardType: TextInputType.number,
+                              keyboardType: TextInputType.text,
                               onChanged: (_) {
                                 setState(() {
                                   _hasChanges = true;
@@ -374,7 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 hintText: '123456789 (optional)',
                                 prefixIcon: Icon(Icons.tag),
                               ),
-                              keyboardType: TextInputType.number,
+                              keyboardType: TextInputType.text,
                               onChanged: (_) {
                                 setState(() {
                                   _hasChanges = true;

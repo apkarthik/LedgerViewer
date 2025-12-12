@@ -133,7 +133,9 @@ class StorageService {
     if (trimmedUrl.contains('?')) {
       // Check if gid parameter already exists
       if (trimmedUrl.contains('gid=')) {
-        // Replace existing gid parameter (matches any GID value, not just numeric)
+        // Replace existing gid parameter
+        // Uses general pattern [^&]* to handle any existing GID value robustly,
+        // though Google Sheets GIDs are typically numeric
         return trimmedUrl.replaceAll(RegExp(r'gid=[^&]*'), 'gid=$trimmedGid');
       } else {
         // Add gid parameter
