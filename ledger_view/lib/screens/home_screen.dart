@@ -157,10 +157,12 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshLedgerData() async {
-    // Get the ledger sheet URL
+    // Get both master and ledger sheet URLs
+    final masterUrl = await StorageService.getMasterSheetUrl();
     final ledgerUrl = await StorageService.getLedgerSheetUrl();
-    if (ledgerUrl == null || ledgerUrl.isEmpty) {
-      _showError('Please configure Ledger Sheet URL in Settings first');
+    
+    if (masterUrl == null || masterUrl.isEmpty || ledgerUrl == null || ledgerUrl.isEmpty) {
+      _showError('Please configure both Master and Ledger Sheet URLs in Settings first');
       return;
     }
 
@@ -179,7 +181,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               SizedBox(width: 12),
-              Text('Refreshing ledger data from Google Sheets...'),
+              Text('Refreshing data from Google Sheets...'),
             ],
           ),
           backgroundColor: Colors.blue.shade600,
@@ -190,14 +192,25 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     try {
+      // Fetch fresh master data from Google Sheets
+      final masterData = await CsvService.fetchCsvData(masterUrl);
+      
+      // Update the cached master data
+      await StorageService.saveCachedMasterData(masterData);
+
+      // Parse and update customer list
+      final customers = CsvService.parseCustomerData(masterData);
+      
       // Fetch fresh ledger data from Google Sheets
       final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
       
       // Update the cached ledger data
       await StorageService.saveCachedLedgerData(ledgerData);
 
-      // Update state to reflect we have ledger data
+      // Update state to reflect we have both master and ledger data
       setState(() {
+        _allCustomers = customers;
+        _hasLoadedCustomers = customers.isNotEmpty;
         _hasLedgerUrl = true;
       });
 
@@ -209,7 +222,7 @@ class HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Ledger data refreshed successfully'),
+                Text('Master and ledger data refreshed successfully'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -266,7 +279,7 @@ class HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshLedgerData,
-            tooltip: 'Refresh Ledger Data',
+            tooltip: 'Refresh Master and Ledger Data',
           ),
           IconButton(
             icon: const Icon(Icons.settings),
