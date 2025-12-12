@@ -137,7 +137,10 @@ class StorageService {
         // Replace existing gid parameter
         // Uses pattern to match gid= at query string boundaries
         // Matches: ?gid=... or &gid=... followed by value until next & or end
-        return trimmedUrl.replaceAll(RegExp(r'([?&])gid=[^&]*'), '\$1gid=$trimmedGid');
+        return trimmedUrl.replaceAllMapped(
+          RegExp(r'([?&])gid=[^&]*'),
+          (match) => '${match.group(1)}gid=$trimmedGid',
+        );
       } else {
         // Add gid parameter
         return '$trimmedUrl&gid=$trimmedGid';
