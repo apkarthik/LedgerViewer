@@ -47,24 +47,37 @@ android {
         versionName flutterVersionName
     }
 
+    def debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+    if (!debugKeystore.exists()) {
+        debugKeystore.parentFile.mkdirs()
+        def process = [
+                "keytool", "-genkeypair", "-v",
+                "-keystore", debugKeystore.absolutePath,
+                "-storepass", "android",
+                "-alias", "androiddebugkey",
+                "-keypass", "android",
+                "-dname", "CN=Android Debug,O=Android,C=US",
+                "-validity", "10000",
+                "-storetype", "JKS"
+        ].execute()
+        process.waitFor()
+        if (process.exitValue() != 0) {
+            throw new GradleException("Failed to generate debug keystore: ${process.err.text}")
+        }
+    }
+
     signingConfigs {
         release {
-            def keystoreFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-            if (keystoreFile.exists()) {
-                storeFile keystoreFile
-                storePassword "android"
-                keyAlias "androiddebugkey"
-                keyPassword "android"
-            }
+            storeFile debugKeystore
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
         }
     }
 
     buildTypes {
         release {
-            // Only use signing config if keystore exists
-            if (signingConfigs.release.storeFile?.exists()) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }
