@@ -78,5 +78,30 @@ void main() {
       
       expect(result, equals('https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv'));
     });
+
+    test('does not match partial parameter names like mygid', () {
+      const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv&mygid=123';
+      const gid = '456';
+      final result = StorageService.buildSheetUrl(baseUrl, gid);
+      
+      // Should add gid parameter, not replace mygid
+      expect(result, equals('$baseUrl&gid=$gid'));
+    });
+
+    test('replaces gid at start of query string', () {
+      const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?gid=0&output=csv';
+      const gid = '123';
+      final result = StorageService.buildSheetUrl(baseUrl, gid);
+      
+      expect(result, equals('https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?gid=$gid&output=csv'));
+    });
+
+    test('replaces gid in middle of query string', () {
+      const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv&gid=0&single=true';
+      const gid = '123';
+      final result = StorageService.buildSheetUrl(baseUrl, gid);
+      
+      expect(result, equals('https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?output=csv&gid=$gid&single=true'));
+    });
   });
 }
