@@ -13,6 +13,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _excelFilePathController = TextEditingController();
   final TextEditingController _masterSheetUrlController = TextEditingController();
   final TextEditingController _ledgerSheetUrlController = TextEditingController();
+  final TextEditingController _publishedDocumentUrlController = TextEditingController();
+  final TextEditingController _masterSheetGidController = TextEditingController();
+  final TextEditingController _ledgerSheetGidController = TextEditingController();
   bool _isSaving = false;
   bool _hasChanges = false;
 
@@ -26,6 +29,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final excelPath = await StorageService.getExcelFilePath();
     final masterUrl = await StorageService.getMasterSheetUrl();
     final ledgerUrl = await StorageService.getLedgerSheetUrl();
+    final publishedUrl = await StorageService.getPublishedDocumentUrl();
+    final masterGid = await StorageService.getMasterSheetGid();
+    final ledgerGid = await StorageService.getLedgerSheetGid();
     setState(() {
       if (excelPath != null) {
         _excelFilePathController.text = excelPath;
@@ -35,6 +41,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       if (ledgerUrl != null) {
         _ledgerSheetUrlController.text = ledgerUrl;
+      }
+      if (publishedUrl != null) {
+        _publishedDocumentUrlController.text = publishedUrl;
+      }
+      if (masterGid != null) {
+        _masterSheetGidController.text = masterGid;
+      }
+      if (ledgerGid != null) {
+        _ledgerSheetGidController.text = ledgerGid;
       }
     });
   }
@@ -47,6 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await StorageService.saveExcelFilePath(_excelFilePathController.text.trim());
       await StorageService.saveMasterSheetUrl(_masterSheetUrlController.text.trim());
       await StorageService.saveLedgerSheetUrl(_ledgerSheetUrlController.text.trim());
+      await StorageService.savePublishedDocumentUrl(_publishedDocumentUrlController.text.trim());
+      await StorageService.saveMasterSheetGid(_masterSheetGidController.text.trim());
+      await StorageService.saveLedgerSheetGid(_ledgerSheetGidController.text.trim());
       setState(() {
         _isSaving = false;
         _hasChanges = false;
@@ -115,6 +133,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _excelFilePathController.clear();
         _masterSheetUrlController.clear();
         _ledgerSheetUrlController.clear();
+        _publishedDocumentUrlController.clear();
+        _masterSheetGidController.clear();
+        _ledgerSheetGidController.clear();
         _hasChanges = false;
       });
       if (mounted) {
@@ -261,6 +282,173 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Published Document URL Section (Simplified approach)
+              Card(
+                color: Colors.purple.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.article,
+                              color: Colors.purple,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '📋 Simplified: Published Document URL',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.purple.shade900,
+                                      ),
+                                ),
+                                Text(
+                                  'One URL for entire document + Sheet GIDs (easier option)',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Colors.purple.shade700,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _publishedDocumentUrlController,
+                        decoration: const InputDecoration(
+                          labelText: 'Published Document URL',
+                          hintText: 'https://docs.google.com/.../pub?output=csv',
+                          prefixIcon: Icon(Icons.link),
+                        ),
+                        maxLines: 2,
+                        keyboardType: TextInputType.url,
+                        onChanged: (_) {
+                          setState(() {
+                            _hasChanges = true;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _masterSheetGidController,
+                              decoration: const InputDecoration(
+                                labelText: 'Master Sheet GID',
+                                hintText: '0 (optional)',
+                                prefixIcon: Icon(Icons.tag),
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) {
+                                setState(() {
+                                  _hasChanges = true;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _ledgerSheetGidController,
+                              decoration: const InputDecoration(
+                                labelText: 'Ledger Sheet GID',
+                                hintText: '123456789 (optional)',
+                                prefixIcon: Icon(Icons.tag),
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) {
+                                setState(() {
+                                  _hasChanges = true;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _pasteFromClipboard(_publishedDocumentUrlController, 'Published Document URL'),
+                          icon: const Icon(Icons.content_paste),
+                          label: const Text('Paste from Clipboard'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.purple,
+                            side: const BorderSide(color: Colors.purple),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.lightbulb_outline,
+                              color: Colors.purple.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Tip: Publish entire document, then specify sheet GIDs.\nFind GID in sheet URL: .../edit#gid=123456789\nLeave GID empty to use first sheet.',
+                                style: TextStyle(
+                                  color: Colors.purple.shade900,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // OR Divider
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey.shade400)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'OR',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade400)),
+                ],
               ),
 
               const SizedBox(height: 16),
@@ -582,6 +770,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _excelFilePathController.dispose();
     _masterSheetUrlController.dispose();
     _ledgerSheetUrlController.dispose();
+    _publishedDocumentUrlController.dispose();
+    _masterSheetGidController.dispose();
+    _ledgerSheetGidController.dispose();
     super.dispose();
   }
 }

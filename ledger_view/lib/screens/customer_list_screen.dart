@@ -27,7 +27,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final masterUrl = await StorageService.getMasterSheetUrl();
+    final masterUrl = await StorageService.getEffectiveMasterSheetUrl();
     setState(() {
       _masterSheetUrl = masterUrl;
     });

@@ -7,6 +7,9 @@ class StorageService {
   static const String _masterSheetUrlKey = 'master_sheet_url';
   static const String _ledgerSheetUrlKey = 'ledger_sheet_url';
   static const String _migrationCompleteKey = 'migration_complete';
+  static const String _publishedDocumentUrlKey = 'published_document_url';
+  static const String _masterSheetGidKey = 'master_sheet_gid';
+  static const String _ledgerSheetGidKey = 'ledger_sheet_gid';
 
   static Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
@@ -77,6 +80,110 @@ class StorageService {
     await _migrateIfNeeded();  // Ensure migration runs before getting URL
     final prefs = await _getPrefs();
     return prefs.getString(_ledgerSheetUrlKey);
+  }
+
+  /// Save the published document base URL
+  static Future<void> savePublishedDocumentUrl(String url) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_publishedDocumentUrlKey, url);
+  }
+
+  /// Get the published document base URL
+  static Future<String?> getPublishedDocumentUrl() async {
+    final prefs = await _getPrefs();
+    return prefs.getString(_publishedDocumentUrlKey);
+  }
+
+  /// Save the Master sheet GID
+  static Future<void> saveMasterSheetGid(String gid) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_masterSheetGidKey, gid);
+  }
+
+  /// Get the Master sheet GID
+  static Future<String?> getMasterSheetGid() async {
+    final prefs = await _getPrefs();
+    return prefs.getString(_masterSheetGidKey);
+  }
+
+  /// Save the Ledger sheet GID
+  static Future<void> saveLedgerSheetGid(String gid) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_ledgerSheetGidKey, gid);
+  }
+
+  /// Get the Ledger sheet GID
+  static Future<String?> getLedgerSheetGid() async {
+    final prefs = await _getPrefs();
+    return prefs.getString(_ledgerSheetGidKey);
+  }
+
+  /// Build full sheet URL from published document URL and GID
+  /// If GID is empty, returns the base URL
+  static String buildSheetUrl(String baseUrl, String? gid) {
+    if (gid == null || gid.trim().isEmpty) {
+      return baseUrl;
+    }
+    
+    final trimmedGid = gid.trim();
+    final trimmedUrl = baseUrl.trim();
+    
+    // Check if URL already has query parameters
+    if (trimmedUrl.contains('?')) {
+      // Check if gid parameter already exists
+      if (trimmedUrl.contains('gid=')) {
+        // Replace existing gid parameter
+        return trimmedUrl.replaceAll(RegExp(r'gid=\d+'), 'gid=$trimmedGid');
+      } else {
+        // Add gid parameter
+        return '$trimmedUrl&gid=$trimmedGid';
+      }
+    } else {
+      // Add query parameters
+      return '$trimmedUrl?output=csv&gid=$trimmedGid';
+    }
+  }
+
+  /// Get the effective Master sheet URL
+  /// Returns either the direct URL or constructed URL from published document URL + GID
+  static Future<String?> getEffectiveMasterSheetUrl() async {
+    // First check if there's a direct master sheet URL (backward compatibility)
+    final directUrl = await getMasterSheetUrl();
+    if (directUrl != null && directUrl.trim().isNotEmpty) {
+      return directUrl;
+    }
+    
+    // Otherwise, construct from published document URL + GID
+    final baseUrl = await getPublishedDocumentUrl();
+    final gid = await getMasterSheetGid();
+    
+    if (baseUrl == null || baseUrl.trim().isEmpty) {
+      return null;
+    }
+    
+    return buildSheetUrl(baseUrl, gid);
+  }
+
+  /// Get the effective Ledger sheet URL
+  /// Returns either the direct URL or constructed URL from published document URL + GID
+  static Future<String?> getEffectiveLedgerSheetUrl() async {
+    await _migrateIfNeeded();  // Ensure migration runs before getting URL
+    
+    // First check if there's a direct ledger sheet URL (backward compatibility)
+    final directUrl = await getLedgerSheetUrl();
+    if (directUrl != null && directUrl.trim().isNotEmpty) {
+      return directUrl;
+    }
+    
+    // Otherwise, construct from published document URL + GID
+    final baseUrl = await getPublishedDocumentUrl();
+    final gid = await getLedgerSheetGid();
+    
+    if (baseUrl == null || baseUrl.trim().isEmpty) {
+      return null;
+    }
+    
+    return buildSheetUrl(baseUrl, gid);
   }
 
   /// Clear all settings (reset)

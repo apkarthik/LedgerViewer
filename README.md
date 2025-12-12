@@ -21,10 +21,35 @@ The app contains 3 main screens accessible via bottom navigation:
 
 ## Setup
 
-1. **Configure Google Sheets CSV URLs**:
+There are two ways to configure Google Sheets URLs:
+
+### Option 1: Simplified Approach (Recommended)
+
+1. **Publish entire Google Sheets document**:
    - Open your Google Sheet containing ledger data
    - Go to **File → Share → Publish to web**
-   - **Important**: Select the specific sheet to publish (Master or Ledger), not the entire document
+   - Select **Entire Document** (not individual sheets)
+   - Select **Comma-separated values (.csv)** format
+   - Click **Publish** and copy the generated link
+   - Example: `https://docs.google.com/spreadsheets/d/e/2PACX-1vTzfIpRjg7ALjbYM0P_Ueb0J2VXEG_ILPls-vCMhMxU8fiSZQYPeLu16OTBD6EYDQ/pub?output=csv`
+
+2. **Find Sheet GIDs** (optional):
+   - Open your Google Sheet
+   - Look at the URL when viewing each sheet: `.../edit#gid=123456789`
+   - The number after `gid=` is the sheet's GID
+   - Leave GID empty to use the first sheet (GID 0)
+
+3. **Configure in the app's Settings page**:
+   - **Published Document URL**: Paste the entire document URL
+   - **Master Sheet GID**: Enter the GID for your customer list sheet (e.g., `0` for first sheet)
+   - **Ledger Sheet GID**: Enter the GID for your ledger data sheet (e.g., `123456789`)
+
+### Option 2: Individual Sheet URLs (Legacy)
+
+1. **Publish each sheet separately**:
+   - Open your Google Sheet containing ledger data
+   - Go to **File → Share → Publish to web**
+   - Select the specific sheet to publish (Master or Ledger)
    - Select **CSV** format
    - Click **Publish** and copy the generated link
    - Repeat for each sheet you need to publish
@@ -32,6 +57,8 @@ The app contains 3 main screens accessible via bottom navigation:
 2. **In the app's Settings page, configure both URLs**:
    - **Master Sheet URL**: The CSV link for your customer list (Master sheet)
    - **Ledger Sheet URL**: The CSV link for your ledger data (Ledger sheet)
+
+### Using the App
 
 3. **Search for Ledger**:
    - Use the **Ledger Search** tab to enter a customer number directly (e.g., "1033", "1035", "1139B", "1525")

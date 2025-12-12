@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final ledgerUrl = await StorageService.getLedgerSheetUrl();
+    final ledgerUrl = await StorageService.getEffectiveLedgerSheetUrl();
     final lastSearch = await StorageService.getLastSearch();
     setState(() {
       _ledgerSheetUrl = ledgerUrl;
