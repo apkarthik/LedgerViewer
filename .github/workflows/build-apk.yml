@@ -2,15 +2,6 @@ name: Build APK
 
 on:
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Build type'
-        required: true
-        default: 'release'
-        type: choice
-        options:
-          - release
-          - debug
 
 permissions:
   contents: read
@@ -48,26 +39,13 @@ jobs:
         working-directory: ledger_view
         run: flutter test || true
 
-      - name: Create debug keystore
-        run: |
-          mkdir -p ~/.android
-          keytool -genkey -v -keystore ~/.android/debug.keystore \
-            -storepass android -alias androiddebugkey -keypass android \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
-
-      - name: Build APK
+      - name: Build Release APK
         working-directory: ledger_view
-        run: |
-          if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
-            flutter build apk --release
-          else
-            flutter build apk --debug
-          fi
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LedgerView-${{ github.event.inputs.build_type }}-apk
-          path: ledger_view/build/app/outputs/flutter-apk/*.apk
+          name: LedgerView-release-apk
+          path: ledger_view/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30

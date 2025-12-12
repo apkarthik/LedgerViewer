@@ -11,6 +11,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _excelFilePathController = TextEditingController();
+  final TextEditingController _masterSheetUrlController = TextEditingController();
+  final TextEditingController _ledgerSheetUrlController = TextEditingController();
   bool _isSaving = false;
   bool _hasChanges = false;
 
@@ -74,88 +76,187 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _resetSettings() async {
-                // Excel File Path/URL Card
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.insert_drive_file,
-                                color: Colors.blue,
-                              ),
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Settings'),
+        content: const Text(
+          'Are you sure you want to clear all settings? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await StorageService.clearAll();
+      setState(() {
+        _excelFilePathController.clear();
+        _masterSheetUrlController.clear();
+        _ledgerSheetUrlController.clear();
+        _hasChanges = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Settings reset successfully'),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pasteFromClipboard(TextEditingController controller, String label) async {
+    try {
+      final data = await Clipboard.getData('text/plain');
+      if (data != null && data.text != null) {
+        setState(() {
+          controller.text = data.text!;
+          _hasChanges = true;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$label pasted from clipboard'),
+              backgroundColor: Colors.blue.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to paste: $e'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+        backgroundColor: const Color(0xFF6366F1),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Excel File Path/URL Card
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Excel File Path or URL',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                                  Text(
-                                    'Provide the path or URL to the Excel file containing both Master and Ledger sheets.',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey.shade600,
-                                        ),
-                                  ),
-                                ],
-                              ),
+                            child: const Icon(
+                              Icons.insert_drive_file,
+                              color: Colors.blue,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _excelFilePathController,
-                          decoration: const InputDecoration(
-                            hintText: '/path/to/ledger_file.xlsx or https://.../ledger_file.xlsx',
-                            prefixIcon: Icon(Icons.insert_drive_file),
                           ),
-                          maxLines: 2,
-                          keyboardType: TextInputType.url,
-                          onChanged: (_) {
-                            setState(() {
-                              _hasChanges = true;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () => _pasteFromClipboard(_excelFilePathController, 'Excel File Path'),
-                            icon: const Icon(Icons.content_paste),
-                            label: const Text('Paste from Clipboard'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.blue,
-                              side: const BorderSide(color: Colors.blue),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Excel File Path or URL',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                Text(
+                                  'Provide the path or URL to the Excel file containing both Master and Ledger sheets.',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Colors.grey.shade600,
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _excelFilePathController,
+                        decoration: const InputDecoration(
+                          hintText: '/path/to/ledger_file.xlsx or https://.../ledger_file.xlsx',
+                          prefixIcon: Icon(Icons.insert_drive_file),
                         ),
-                      ],
-                    ),
+                        maxLines: 2,
+                        keyboardType: TextInputType.url,
+                        onChanged: (_) {
+                          setState(() {
+                            _hasChanges = true;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _pasteFromClipboard(_excelFilePathController, 'Excel File Path'),
+                          icon: const Icon(Icons.content_paste),
+                          label: const Text('Paste from Clipboard'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: const BorderSide(color: Colors.blue),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Instructions Card
-                Container(
+              ),
+
+              const SizedBox(height: 16),
+
+              // Instructions Card
+              Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
@@ -469,6 +570,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    _excelFilePathController.dispose();
     _masterSheetUrlController.dispose();
     _ledgerSheetUrlController.dispose();
     super.dispose();
