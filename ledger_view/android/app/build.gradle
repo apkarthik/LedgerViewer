@@ -61,6 +61,8 @@ android {
                 "-storepass", debugKeystorePassword,
                 "-alias", debugKeyAlias,
                 "-keypass", debugKeyPassword,
+                "-keyalg", "RSA",
+                "-keysize", "2048",
                 "-dname", "CN=Android Debug,O=Android,C=US",
                 "-validity", "10000",
                 "-storetype", "JKS"
