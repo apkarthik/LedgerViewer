@@ -91,6 +91,22 @@ class LedgerDisplay extends StatelessWidget {
                   if (result.closingBalance.isNotEmpty)
                     _buildClosingBalance(),
                   
+                  // Legend
+                  if (result.closingBalance.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      child: const Text(
+                        'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                  
                   const SizedBox(height: 16),
                   
                   // Print Button at bottom
@@ -148,19 +164,20 @@ class LedgerDisplay extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 4,
+            flex: 2,
             child: Text(
-              'Particulars',
+              'Type',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              'Type',
+              'No',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
@@ -217,32 +234,17 @@ class LedgerDisplay extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (entry.toBy.isNotEmpty)
-                  Text(
-                    entry.toBy,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: entry.toBy.toLowerCase() == 'to' 
-                          ? Colors.red.shade700 
-                          : Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                Text(
-                  entry.particulars,
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ],
+            flex: 2,
+            child: Text(
+              _getVchTypeFirstLetter(entry.vchType),
+              style: const TextStyle(fontSize: 10),
+              textAlign: TextAlign.center,
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              entry.vchType,
+              entry.vchNo,
               style: const TextStyle(fontSize: 10),
               textAlign: TextAlign.center,
             ),
@@ -285,14 +287,14 @@ class LedgerDisplay extends StatelessWidget {
       child: Row(
         children: [
           const Expanded(
-            flex: 9,
+            flex: 7,
             child: Text(
               'TOTAL',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.left,
             ),
           ),
           Expanded(
@@ -308,6 +310,7 @@ class LedgerDisplay extends StatelessWidget {
               textAlign: TextAlign.right,
             ),
           ),
+          const SizedBox(width: 8), // Space between debit and credit
           Expanded(
             flex: 2,
             child: Text(
@@ -382,5 +385,10 @@ class LedgerDisplay extends StatelessWidget {
     }
     
     return amount;
+  }
+
+  String _getVchTypeFirstLetter(String vchType) {
+    if (vchType.isEmpty) return '';
+    return vchType[0].toUpperCase();
   }
 }

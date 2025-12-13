@@ -243,10 +243,10 @@ class CsvService {
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
         if (parts.length == 3) {
-          final year = parts[0];
-          final month = _getMonthName(int.tryParse(parts[1]) ?? 0);
-          final day = int.tryParse(parts[2]) ?? parts[2];
-          return '$day-$month-$year';
+          final year = parts[0].length == 4 ? parts[0].substring(2) : parts[0];
+          final month = parts[1].padLeft(2, '0');
+          final day = parts[2].padLeft(2, '0');
+          return '$day/$month/$year';
         }
       }
       
