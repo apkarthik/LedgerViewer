@@ -87,9 +87,25 @@ class LedgerDisplay extends StatelessWidget {
                   
                   const SizedBox(height: 8),
                   
-                  // Closing Balance
+                  // Balance
                   if (result.closingBalance.isNotEmpty)
                     _buildClosingBalance(),
+                  
+                  // Legend
+                  if (result.closingBalance.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      child: const Text(
+                        'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
                   
                   const SizedBox(height: 16),
                   
@@ -148,19 +164,20 @@ class LedgerDisplay extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 4,
+            flex: 2,
             child: Text(
-              'Particulars',
+              'Type',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              'Type',
+              'No',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
@@ -212,37 +229,22 @@ class LedgerDisplay extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              entry.date,
+              _formatDateForDisplay(entry.date), // Format for display: 24-Apr-2025 → 24/04/25
               style: const TextStyle(fontSize: 10),
-            ),
-          ),
-          Expanded(
-            flex: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (entry.toBy.isNotEmpty)
-                  Text(
-                    entry.toBy,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: entry.toBy.toLowerCase() == 'to' 
-                          ? Colors.red.shade700 
-                          : Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                Text(
-                  entry.particulars,
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ],
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              entry.vchType,
+              _getVchTypeFirstLetter(entry.vchType),
+              style: const TextStyle(fontSize: 10),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              entry.vchNo,
               style: const TextStyle(fontSize: 10),
               textAlign: TextAlign.center,
             ),
@@ -279,50 +281,88 @@ class LedgerDisplay extends StatelessWidget {
   }
 
   Widget _buildTotalsRow() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      color: Colors.grey.shade50,
-      child: Row(
-        children: [
-          const Expanded(
-            flex: 9,
-            child: Text(
-              'TOTAL',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
-              textAlign: TextAlign.right,
+    return Column(
+      children: [
+        // Total Debit
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.red.shade50.withOpacity(0.5),
+                Colors.red.shade100.withOpacity(0.3),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.red.shade300.withOpacity(0.5),
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              _formatAmount(result.totalDebit),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: Colors.red.shade700,
-                fontFamily: 'monospace',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Debit',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Color(0xFF991B1B),
+                ),
               ),
-              textAlign: TextAlign.right,
+              Text(
+                '₹ ${_formatAmount(result.totalDebit)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF991B1B),
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Total Credit
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.green.shade50.withOpacity(0.5),
+                Colors.green.shade100.withOpacity(0.3),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.green.shade300.withOpacity(0.5),
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              _formatAmount(result.totalCredit),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: Colors.green.shade700,
-                fontFamily: 'monospace',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Credit',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Color(0xFF065F46),
+                ),
               ),
-              textAlign: TextAlign.right,
-            ),
+              Text(
+                '₹ ${_formatAmount(result.totalCredit)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF065F46),
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -346,7 +386,7 @@ class LedgerDisplay extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text(
-            'Closing Balance',
+            'Balance',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -382,5 +422,41 @@ class LedgerDisplay extends StatelessWidget {
     }
     
     return amount;
+  }
+
+  String _getVchTypeFirstLetter(String vchType) {
+    if (vchType.isEmpty) return '';
+    return vchType[0].toUpperCase();
+  }
+
+  String _formatDateForDisplay(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    
+    try {
+      // Date comes from CsvService._formatDate() in format "24-Apr-25"
+      // Convert to dd/mm/yy format for display
+      if (dateStr.contains('-')) {
+        final parts = dateStr.split('-');
+        if (parts.length == 3) {
+          final day = parts[0].padLeft(2, '0');
+          final month = _getMonthNumber(parts[1]); // Already zero-padded
+          final year = parts[2].length == 4 ? parts[2].substring(2) : parts[2];
+          return '$day/$month/$year';
+        }
+      }
+      
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  String _getMonthNumber(String monthName) {
+    const months = {
+      'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+      'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+    };
+    return months[monthName] ?? monthName;
   }
 }

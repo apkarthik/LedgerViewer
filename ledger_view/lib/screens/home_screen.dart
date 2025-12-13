@@ -345,6 +345,8 @@ class HomeScreenState extends State<HomeScreen> {
                                             _selectedCustomer = null;
                                             _errorMessage = null;
                                           });
+                                          // Request focus after clearing
+                                          focusNode.requestFocus();
                                         },
                                       )
                                     : null,

@@ -10,11 +10,30 @@ class PrintService {
   static const thermalPageFormat = PdfPageFormat(
     164.4, // 58mm width
     double.infinity, // Continuous feed
-    marginAll: 6, // Small margins for thermal printers
+    marginAll: 4, // Minimal margins for thermal printers
   );
+
+  // Column widths optimized for 58mm thermal printer
+  // Total available width: 164.4 - (4*2) = 156.4 points
+  static const double dateWidth = 42.0;
+  static const double typeWidth = 10.0;
+  static const double noWidth = 20.0;
+  static const double debitWidth = 42.0;
+  static const double creditWidth = 42.0;
 
   static Future<void> printLedger(LedgerResult result) async {
     final pdf = pw.Document();
+
+    // Text style for narrow font (using condensed spacing)
+    final narrowTextStyle = pw.TextStyle(
+      fontSize: 8,
+      letterSpacing: -0.3, // Negative letter spacing for condensed effect
+    );
+    final narrowBoldTextStyle = pw.TextStyle(
+      fontSize: 8,
+      fontWeight: pw.FontWeight.bold,
+      letterSpacing: -0.3,
+    );
 
     pdf.addPage(
       pw.Page(
@@ -28,40 +47,42 @@ class PrintService {
                 child: pw.Text(
                   'LEDGER STATEMENT',
                   style: pw.TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: pw.FontWeight.bold,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 3),
               pw.Center(
                 child: pw.Text(
                   DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
-                  style: const pw.TextStyle(fontSize: 10),
+                  style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
                 ),
               ),
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 6),
               pw.Divider(thickness: 1),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 3),
 
               // Customer Info
               pw.Text(
                 'Customer:',
                 style: pw.TextStyle(
-                  fontSize: 10,
+                  fontSize: 8,
                   fontWeight: pw.FontWeight.bold,
+                  letterSpacing: -0.2,
                 ),
               ),
               pw.Text(
                 result.customerName,
-                style: const pw.TextStyle(fontSize: 10),
+                style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
               ),
-              pw.SizedBox(height: 2),
+              pw.SizedBox(height: 1),
               pw.Text(
                 'Period: ${result.dateRange}',
-                style: const pw.TextStyle(fontSize: 9),
+                style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
               ),
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 6),
 
               // Table Header
               pw.Container(
@@ -74,54 +95,41 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 32,
+                      width: dateWidth,
                       child: pw.Text(
-                        'Dt',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
-                        ),
+                        'Date',
+                        style: narrowBoldTextStyle,
                       ),
                     ),
                     pw.SizedBox(
-                      width: 12,
+                      width: typeWidth,
                       child: pw.Text(
                         'Tp',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
-                        ),
+                        style: narrowBoldTextStyle,
                         textAlign: pw.TextAlign.center,
                       ),
                     ),
                     pw.SizedBox(
-                      width: 18,
+                      width: noWidth,
                       child: pw.Text(
                         'No',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
-                        ),
+                        style: narrowBoldTextStyle,
                         textAlign: pw.TextAlign.center,
                       ),
                     ),
-                    pw.Expanded(
+                    pw.SizedBox(
+                      width: debitWidth,
                       child: pw.Text(
                         'Debit',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
-                        ),
+                        style: narrowBoldTextStyle,
                         textAlign: pw.TextAlign.right,
                       ),
                     ),
-                    pw.Expanded(
+                    pw.SizedBox(
+                      width: creditWidth,
                       child: pw.Text(
                         'Credit',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
-                        ),
+                        style: narrowBoldTextStyle,
                         textAlign: pw.TextAlign.right,
                       ),
                     ),
@@ -142,52 +150,72 @@ class PrintService {
                 margin: const pw.EdgeInsets.only(top: 4),
               ),
 
-              // Totals Row
+              // Total Debit
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(vertical: 4),
+                padding: const pw.EdgeInsets.all(4),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(width: 1),
+                ),
                 child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.SizedBox(
-                      width: 62, // Dt + Tp + No columns
-                      child: pw.Text(
-                        'TOTAL',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                        textAlign: pw.TextAlign.right,
+                    pw.Text(
+                      'Total Debit',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    pw.Expanded(
-                      child: pw.Text(
-                        _formatAmount(result.totalDebit),
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                        textAlign: pw.TextAlign.right,
-                      ),
-                    ),
-                    pw.Expanded(
-                      child: pw.Text(
-                        _formatAmount(result.totalCredit),
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                        textAlign: pw.TextAlign.right,
+                    pw.Text(
+                      'Rs. ${_formatAmount(result.totalDebit)}',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 3),
 
-              // Closing Balance
+              // Total Credit
+              pw.Container(
+                padding: const pw.EdgeInsets.all(4),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(width: 1),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'Total Credit',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    pw.Text(
+                      'Rs. ${_formatAmount(result.totalCredit)}',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 6),
+
+              // Balance
               if (result.closingBalance.isNotEmpty)
                 pw.Container(
-                  padding: const pw.EdgeInsets.all(6),
+                  padding: const pw.EdgeInsets.all(4),
                   decoration: pw.BoxDecoration(
                     border: pw.Border.all(width: 1),
                   ),
@@ -195,20 +223,33 @@ class PrintService {
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
                       pw.Text(
-                        'Closing Balance',
+                        'Balance',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
+                          fontSize: 9,
+                          letterSpacing: -0.2,
                         ),
                       ),
                       pw.Text(
                         'Rs. ${_formatAmount(result.closingBalance)}',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 11,
+                          fontSize: 9,
+                          letterSpacing: -0.2,
                         ),
                       ),
                     ],
+                  ),
+                ),
+
+              // Legend
+              if (result.closingBalance.isNotEmpty)
+                pw.Container(
+                  margin: const pw.EdgeInsets.only(top: 4),
+                  child: pw.Text(
+                    'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                    style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
+                    textAlign: pw.TextAlign.left,
                   ),
                 ),
             ],
@@ -223,45 +264,52 @@ class PrintService {
   }
 
   static pw.Widget _buildEntryRow(LedgerEntry entry) {
+    final narrowTextStyle = pw.TextStyle(
+      fontSize: 7,
+      letterSpacing: -0.3,
+    );
+    
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
-            width: 32,
+            width: dateWidth,
             child: pw.Text(
               _formatDateShort(entry.date),
-              style: const pw.TextStyle(fontSize: 8),
+              style: narrowTextStyle,
             ),
           ),
           pw.SizedBox(
-            width: 12,
+            width: typeWidth,
             child: pw.Text(
               _getVchTypeFirstLetter(entry.vchType),
-              style: const pw.TextStyle(fontSize: 8),
+              style: narrowTextStyle,
               textAlign: pw.TextAlign.center,
             ),
           ),
           pw.SizedBox(
-            width: 18,
+            width: noWidth,
             child: pw.Text(
               entry.vchNo,
-              style: const pw.TextStyle(fontSize: 8),
+              style: narrowTextStyle,
               textAlign: pw.TextAlign.center,
             ),
           ),
-          pw.Expanded(
+          pw.SizedBox(
+            width: debitWidth,
             child: pw.Text(
               _formatAmount(entry.debit),
-              style: const pw.TextStyle(fontSize: 9),
+              style: narrowTextStyle,
               textAlign: pw.TextAlign.right,
             ),
           ),
-          pw.Expanded(
+          pw.SizedBox(
+            width: creditWidth,
             child: pw.Text(
               _formatAmount(entry.credit),
-              style: const pw.TextStyle(fontSize: 9),
+              style: narrowTextStyle,
               textAlign: pw.TextAlign.right,
             ),
           ),
@@ -278,19 +326,35 @@ class PrintService {
   static String _formatDateShort(String dateStr) {
     if (dateStr.isEmpty) return '';
     
-    // Extract just the day and month if possible
-    // Expected format: "24-Apr-2025" or similar
     try {
+      // Date comes from CsvService._formatDate() in format "24-Apr-25"
+      // Convert to dd/mm/yy format for thermal printer (e.g., "24/04/25")
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
-        if (parts.length >= 2) {
-          return '${parts[0]}-${parts[1]}'; // Return day-month only
+        if (parts.length == 3) {
+          final day = parts[0].padLeft(2, '0');
+          final monthNum = _getMonthNumber(parts[1]); // Already zero-padded
+          final rawYear = parts[2];
+          final year = rawYear.length >= 2
+            ? rawYear.substring(rawYear.length - 2)
+            : rawYear.padLeft(2, '0');
+          return '$day/$monthNum/$year';
         }
       }
+      
       return dateStr;
     } catch (e) {
       return dateStr;
     }
+  }
+
+  static String _getMonthNumber(String monthName) {
+    const months = {
+      'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+      'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+    };
+    return months[monthName] ?? monthName;
   }
 
   static String _formatAmount(String amount) {
