@@ -74,9 +74,9 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 50,
+                      width: 38,
                       child: pw.Text(
-                        'Date',
+                        'Dt',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
                           fontSize: 7,
@@ -84,9 +84,9 @@ class PrintService {
                       ),
                     ),
                     pw.SizedBox(
-                      width: 20,
+                      width: 15,
                       child: pw.Text(
-                        'Type',
+                        'Tp',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
                           fontSize: 7,
@@ -95,9 +95,9 @@ class PrintService {
                       ),
                     ),
                     pw.SizedBox(
-                      width: 25,
+                      width: 22,
                       child: pw.Text(
-                        'No.',
+                        'No',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
                           fontSize: 7,
@@ -149,7 +149,7 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 95, // Date + Type + No. columns
+                      width: 75, // Dt + Tp + No columns
                       child: pw.Text(
                         'TOTAL',
                         style: pw.TextStyle(
@@ -231,14 +231,14 @@ class PrintService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
-            width: 50,
+            width: 38,
             child: pw.Text(
               _formatDateShort(entry.date),
               style: const pw.TextStyle(fontSize: 6),
             ),
           ),
           pw.SizedBox(
-            width: 20,
+            width: 15,
             child: pw.Text(
               _getVchTypeFirstLetter(entry.vchType),
               style: const pw.TextStyle(fontSize: 6),
@@ -246,7 +246,7 @@ class PrintService {
             ),
           ),
           pw.SizedBox(
-            width: 25,
+            width: 22,
             child: pw.Text(
               entry.vchNo,
               style: const pw.TextStyle(fontSize: 6),
