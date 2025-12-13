@@ -87,7 +87,7 @@ class LedgerDisplay extends StatelessWidget {
                   
                   const SizedBox(height: 8),
                   
-                  // Closing Balance
+                  // Balance
                   if (result.closingBalance.isNotEmpty)
                     _buildClosingBalance(),
                   
@@ -306,7 +306,7 @@ class LedgerDisplay extends StatelessWidget {
                 'Total Debit',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 12,
                   color: Color(0xFF991B1B),
                 ),
               ),
@@ -314,7 +314,7 @@ class LedgerDisplay extends StatelessWidget {
                 '₹ ${_formatAmount(result.totalDebit)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                   color: Color(0xFF991B1B),
                   fontFamily: 'monospace',
                 ),
@@ -346,7 +346,7 @@ class LedgerDisplay extends StatelessWidget {
                 'Total Credit',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 12,
                   color: Color(0xFF065F46),
                 ),
               ),
@@ -354,7 +354,7 @@ class LedgerDisplay extends StatelessWidget {
                 '₹ ${_formatAmount(result.totalCredit)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                   color: Color(0xFF065F46),
                   fontFamily: 'monospace',
                 ),
@@ -386,7 +386,7 @@ class LedgerDisplay extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text(
-            'Closing Balance',
+            'Balance',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
