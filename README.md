@@ -51,11 +51,13 @@ The app displays full ledger details on screen but prints a simplified format fo
 **On-Screen Display:**
 - Date, To/By, Particulars, Vch Type, Debit, Credit
 
-**Print/PDF Output:**
-- Date, Vch Type (first letter only), Vch No., Debit, Credit
+**Print/PDF Output (Optimized for 58mm Thermal Printer):**
+- Date (dd/mm/yy format, e.g., 24/04/25), Vch Type (first letter only), Vch No., Debit, Credit
 - Examples: Receipt → R, Purchase → P, Sales → S, Cash → C, Bank → B
+- Uses narrow/condensed fonts to maximize space on thermal paper
+- Auto-adjustable column widths for debit and credit amounts
 
-This simplified print format follows standard accounting practices and matches the requirements in `sample_bill.xlsx` (Required sheet).
+This simplified print format follows standard accounting practices for thermal printers and matches the requirements in `sample_bill.xlsx` (Required sheet).
 
 ## Building the APK
 
