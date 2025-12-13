@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/storage_service.dart';
+import '../services/csv_service.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final VoidCallback? onSettingsSaved;
+
+  const SettingsScreen({super.key, this.onSettingsSaved});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController _excelFilePathController = TextEditingController();
   final TextEditingController _masterSheetUrlController = TextEditingController();
   final TextEditingController _ledgerSheetUrlController = TextEditingController();
   bool _isSaving = false;
@@ -23,32 +25,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final excelPath = await StorageService.getExcelFilePath();
+    final masterUrl = await StorageService.getMasterSheetUrl();
+    final ledgerUrl = await StorageService.getLedgerSheetUrl();
     setState(() {
-      if (excelPath != null) {
-        _excelFilePathController.text = excelPath;
+      if (masterUrl != null) {
+        _masterSheetUrlController.text = masterUrl;
+      }
+      if (ledgerUrl != null) {
+        _ledgerSheetUrlController.text = ledgerUrl;
       }
     });
   }
 
   Future<void> _saveSettings() async {
+    final masterUrl = _masterSheetUrlController.text.trim();
+    final ledgerUrl = _ledgerSheetUrlController.text.trim();
+
+    if (masterUrl.isEmpty || ledgerUrl.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please provide both Master and Ledger Sheet URLs'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isSaving = true;
     });
+    
     try {
-      await StorageService.saveExcelFilePath(_excelFilePathController.text.trim());
+      // Save URLs first
+      await StorageService.saveMasterSheetUrl(masterUrl);
+      await StorageService.saveLedgerSheetUrl(ledgerUrl);
+
+      // Fetch and cache Master data
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Fetching Master data...'),
+              ],
+            ),
+            backgroundColor: Colors.blue.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 30),
+          ),
+        );
+      }
+      
+      final masterData = await CsvService.fetchCsvData(masterUrl);
+      await StorageService.saveCachedMasterData(masterData);
+
+      // Fetch and cache Ledger data
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Fetching Ledger data...'),
+              ],
+            ),
+            backgroundColor: Colors.blue.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 30),
+          ),
+        );
+      }
+      
+      final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
+      await StorageService.saveCachedLedgerData(ledgerData);
+
       setState(() {
         _isSaving = false;
         _hasChanges = false;
       });
+      
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Settings saved successfully'),
+                Text('Settings saved and data cached successfully'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -58,15 +143,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         );
+        
+        // Notify that settings were saved
+        widget.onSettingsSaved?.call();
       }
     } catch (e) {
       setState(() {
         _isSaving = false;
       });
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving settings: $e'),
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
           ),
@@ -102,7 +191,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed == true) {
       await StorageService.clearAll();
       setState(() {
-        _excelFilePathController.clear();
         _masterSheetUrlController.clear();
         _ledgerSheetUrlController.clear();
         _hasChanges = false;
@@ -177,84 +265,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Excel File Path/URL Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.insert_drive_file,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Excel File Path or URL',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                Text(
-                                  'Provide the path or URL to the Excel file containing both Master and Ledger sheets.',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Colors.grey.shade600,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _excelFilePathController,
-                        decoration: const InputDecoration(
-                          hintText: '/path/to/ledger_file.xlsx or https://.../ledger_file.xlsx',
-                          prefixIcon: Icon(Icons.insert_drive_file),
-                        ),
-                        maxLines: 2,
-                        keyboardType: TextInputType.url,
-                        onChanged: (_) {
-                          setState(() {
-                            _hasChanges = true;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _pasteFromClipboard(_excelFilePathController, 'Excel File Path'),
-                          icon: const Icon(Icons.content_paste),
-                          label: const Text('Paste from Clipboard'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                            side: const BorderSide(color: Colors.blue),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
               // Instructions Card
               Container(
                   padding: const EdgeInsets.all(12),
@@ -569,7 +579,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _excelFilePathController.dispose();
     _masterSheetUrlController.dispose();
     _ledgerSheetUrlController.dispose();
     super.dispose();

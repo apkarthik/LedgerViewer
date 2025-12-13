@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'customer_list_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 
@@ -11,13 +10,31 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 1; // Start with Customer List (index 1)
+  int _selectedIndex = 1; // Start with Ledger Search (index 1)
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
 
-  final List<Widget> _screens = [
-    const SettingsScreen(),
-    const CustomerListScreen(),
-    const HomeScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      SettingsScreen(
+        onSettingsSaved: () {
+          // Reload data in HomeScreen when settings are saved
+          _homeScreenKey.currentState?.reloadData();
+        },
+      ),
+      HomeScreen(
+        key: _homeScreenKey,
+        onSettingsTap: () {
+          setState(() {
+            _selectedIndex = 0;
+          });
+        },
+      ),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -44,12 +61,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Settings',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Customers',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.search),
-            label: 'Ledger Search',
+            label: 'Ledger',
           ),
         ],
       ),
