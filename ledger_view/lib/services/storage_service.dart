@@ -10,6 +10,7 @@ class StorageService {
   static const String _migrationCompleteKey = 'migration_complete';
   static const String _cachedMasterDataKey = 'cached_master_data';
   static const String _cachedLedgerDataKey = 'cached_ledger_data';
+  static const String _themeKey = 'app_theme';
 
   static Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
@@ -122,6 +123,18 @@ class StorageService {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Save the selected theme
+  static Future<void> saveTheme(String themeName) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_themeKey, themeName);
+  }
+
+  /// Get the selected theme
+  static Future<String?> getTheme() async {
+    final prefs = await _getPrefs();
+    return prefs.getString(_themeKey);
   }
 
   /// Clear all settings (reset)
