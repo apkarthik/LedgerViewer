@@ -296,8 +296,8 @@ class PrintService {
     if (dateStr.isEmpty) return '';
     
     try {
-      // Date should already be formatted as dd/mm/yy by csv_service._formatDate()
-      // This method is called from LedgerEntry which gets dates from csv_service
+      // Date should already be formatted as dd/mm/yy by CsvService._formatDate()
+      // This method is called from LedgerEntry which gets dates from CsvService
       // If it contains '/' separator, assume it's correctly formatted
       if (dateStr.contains('/')) {
         return dateStr;
