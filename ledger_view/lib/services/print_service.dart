@@ -148,7 +148,7 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 68, // Dt + Tp + No columns
+                      width: 68, // Dt + Tp + No columns (28 + 12 + 28)
                       child: pw.Text(
                         'TOTAL',
                         style: pw.TextStyle(
