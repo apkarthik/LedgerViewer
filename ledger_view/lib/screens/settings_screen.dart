@@ -526,12 +526,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.purple.shade50,
+                                color: Theme.of(context).colorScheme.primaryContainer,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 Icons.palette,
-                                color: Colors.purple.shade400,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -570,7 +570,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text('Theme changed to ${ThemeService.getThemeName(theme)}'),
-                                          backgroundColor: Colors.purple.shade600,
+                                          backgroundColor: Theme.of(context).colorScheme.primary,
                                           behavior: SnackBarBehavior.floating,
                                           duration: const Duration(seconds: 1),
                                           shape: RoundedRectangleBorder(

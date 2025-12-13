@@ -12,6 +12,9 @@ enum AppTheme {
 
 /// Service to manage app themes
 class ThemeService {
+  /// Common text theme to be used across all themes for consistency
+  static TextTheme get _baseTextTheme => GoogleFonts.poppinsTextTheme();
+  
   /// Get theme data based on the selected theme option
   static ThemeData getThemeData(AppTheme theme) {
     switch (theme) {
@@ -68,7 +71,7 @@ class ThemeService {
         seedColor: const Color(0xFF6366F1),
         brightness: Brightness.light,
       ),
-      textTheme: GoogleFonts.poppinsTextTheme(),
+      textTheme: _baseTextTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -178,7 +181,7 @@ class ThemeService {
         seedColor: primaryColor,
         brightness: Brightness.light,
       ),
-      textTheme: GoogleFonts.poppinsTextTheme(),
+      textTheme: _baseTextTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -233,7 +236,7 @@ class ThemeService {
         seedColor: primaryColor,
         brightness: Brightness.light,
       ),
-      textTheme: GoogleFonts.poppinsTextTheme(),
+      textTheme: _baseTextTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -288,7 +291,7 @@ class ThemeService {
         seedColor: primaryColor,
         brightness: Brightness.light,
       ),
-      textTheme: GoogleFonts.poppinsTextTheme(),
+      textTheme: _baseTextTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
