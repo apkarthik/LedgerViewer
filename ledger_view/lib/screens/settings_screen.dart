@@ -91,35 +91,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final masterData = await CsvService.fetchCsvData(masterUrl);
       await StorageService.saveCachedMasterData(masterData);
 
-      // Fetch and cache Ledger data
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text('Fetching Ledger data...'),
-              ],
-            ),
-            backgroundColor: Colors.blue.shade600,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 30),
-          ),
-        );
-      }
-      
-      final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
-      await StorageService.saveCachedLedgerData(ledgerData);
-
       setState(() {
         _isSaving = false;
         _hasChanges = false;
@@ -133,7 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Settings saved and data cached successfully'),
+                Text('Settings saved and master data cached successfully'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
