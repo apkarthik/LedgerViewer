@@ -296,23 +296,15 @@ class PrintService {
     if (dateStr.isEmpty) return '';
     
     try {
-      // Date should already be formatted as dd/mm/yy by CsvService._formatDate()
-      // This method is called from LedgerEntry which gets dates from CsvService
-      // If it contains '/' separator, assume it's correctly formatted
-      if (dateStr.contains('/')) {
-        return dateStr;
-      }
-      
-      // Edge case fallback: if format is different (e.g., direct date input without CsvService processing)
-      // Handle cases like "dd-mm-yy" by replacing separator
+      // Date comes from CsvService._formatDate() in format "24-Apr-2025"
+      // Convert to dd/mm/yy format for display
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
         if (parts.length == 3) {
-          // Full date with day, month, and year
-          return '${parts[0]}/${parts[1]}/${parts[2]}';
-        } else if (parts.length == 2) {
-          // Only day and month
-          return '${parts[0]}/${parts[1]}';
+          final day = parts[0].padLeft(2, '0');
+          final month = _getMonthNumber(parts[1]).padLeft(2, '0');
+          final year = parts[2].length == 4 ? parts[2].substring(2) : parts[2];
+          return '$day/$month/$year';
         }
       }
       
@@ -320,6 +312,15 @@ class PrintService {
     } catch (e) {
       return dateStr;
     }
+  }
+
+  static String _getMonthNumber(String monthName) {
+    const months = {
+      'Jan': '1', 'Feb': '2', 'Mar': '3', 'Apr': '4',
+      'May': '5', 'Jun': '6', 'Jul': '7', 'Aug': '8',
+      'Sep': '9', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+    };
+    return months[monthName] ?? monthName;
   }
 
   static String _formatAmount(String amount) {

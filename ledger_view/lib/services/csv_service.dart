@@ -224,8 +224,8 @@ class CsvService {
 
   static bool _isDateString(String str) {
     // Check if the string looks like a date using regex pattern
-    // Matches yyyy-mm-dd, dd-mm-yyyy, dd/mm/yyyy, dd/mm/yy (2-digit year) formats
-    final datePattern = RegExp(r'\d{4}-\d{2}-\d{2}|\d{2}[-/]\d{2}[-/]\d{4}|\d{2}[-/]\d{2}[-/]\d{2}|\d{2}-[A-Za-z]{3}-\d{4}');
+    // Matches yyyy-mm-dd, dd-mm-yyyy, dd/mm/yyyy formats
+    final datePattern = RegExp(r'\d{4}-\d{2}-\d{2}|\d{2}[-/]\d{2}[-/]\d{4}|\d{2}-[A-Za-z]{3}-\d{4}');
     return datePattern.hasMatch(str) || str.contains('-') && str.length > 8;
   }
 
@@ -239,26 +239,14 @@ class CsvService {
         dateStr = dateStr.split(' ')[0];
       }
       
-      // Parse yyyy-mm-dd format (Excel standard)
+      // Parse yyyy-mm-dd format
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
         if (parts.length == 3) {
-          // Check if first part is a 4-digit year (yyyy-mm-dd format)
-          if (parts[0].length == 4) {
-            final year = parts[0].substring(2); // Last 2 digits of 4-digit year
-            final month = parts[1].padLeft(2, '0');
-            final day = parts[2].padLeft(2, '0');
-            return '$day/$month/$year';
-          } else if (parts[2].length == 4) {
-            // Handle dd-mm-yyyy format if present
-            final day = parts[0].padLeft(2, '0');
-            final month = parts[1].padLeft(2, '0');
-            final year = parts[2].substring(2); // Last 2 digits of 4-digit year
-            return '$day/$month/$year';
-          } else {
-            // Already in short format, just replace separators
-            return dateStr.replaceAll('-', '/');
-          }
+          final year = parts[0];
+          final month = _getMonthName(int.tryParse(parts[1]) ?? 0);
+          final day = int.tryParse(parts[2]) ?? parts[2];
+          return '$day-$month-$year';
         }
       }
       
@@ -266,5 +254,16 @@ class CsvService {
     } catch (e) {
       return dateStr;
     }
+  }
+
+  static String _getMonthName(int month) {
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    if (month >= 1 && month <= 12) {
+      return months[month];
+    }
+    return month.toString();
   }
 }
