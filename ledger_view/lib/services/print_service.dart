@@ -155,14 +155,14 @@ class PrintService {
                       'Total Debit',
                       style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
-                        fontSize: 10,
+                        fontSize: 9,
                       ),
                     ),
                     pw.Text(
                       'Rs. ${_formatAmount(result.totalDebit)}',
                       style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
-                        fontSize: 11,
+                        fontSize: 10,
                       ),
                     ),
                   ],
@@ -184,14 +184,14 @@ class PrintService {
                       'Total Credit',
                       style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
-                        fontSize: 10,
+                        fontSize: 9,
                       ),
                     ),
                     pw.Text(
                       'Rs. ${_formatAmount(result.totalCredit)}',
                       style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
-                        fontSize: 11,
+                        fontSize: 10,
                       ),
                     ),
                   ],
@@ -200,7 +200,7 @@ class PrintService {
 
               pw.SizedBox(height: 8),
 
-              // Closing Balance
+              // Balance
               if (result.closingBalance.isNotEmpty)
                 pw.Container(
                   padding: const pw.EdgeInsets.all(6),
@@ -211,7 +211,7 @@ class PrintService {
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
                       pw.Text(
-                        'Closing Balance',
+                        'Balance',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
                           fontSize: 10,
