@@ -74,7 +74,7 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 28,
+                      width: 38,
                       child: pw.Text(
                         'Dt',
                         style: pw.TextStyle(
@@ -256,7 +256,7 @@ class PrintService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
-            width: 28,
+            width: 38,
             child: pw.Text(
               _formatDateShort(entry.date),
               style: const pw.TextStyle(fontSize: 8),
