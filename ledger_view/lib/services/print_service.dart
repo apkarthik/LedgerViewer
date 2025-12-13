@@ -303,7 +303,7 @@ class PrintService {
         return dateStr;
       }
       
-      // Fallback: if format is different, try to extract useful info
+      // Edge case fallback: if format is different (e.g., direct date input without CsvService processing)
       // Handle cases like "dd-mm-yy" by replacing separator
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
