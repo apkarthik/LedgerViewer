@@ -281,62 +281,88 @@ class LedgerDisplay extends StatelessWidget {
   }
 
   Widget _buildTotalsRow() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      color: Colors.grey.shade50,
-      child: Row(
-        children: [
-          const Expanded(
-            flex: 7,
-            child: Text(
-              'TOTAL',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
-              textAlign: TextAlign.left,
+    return Column(
+      children: [
+        // Total Debit
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.red.shade50.withOpacity(0.5),
+                Colors.red.shade100.withOpacity(0.3),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.red.shade300.withOpacity(0.5),
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 4), // Add spacing to the right
-              child: Text(
-                _formatAmount(result.totalDebit),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Debit',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  color: Colors.red.shade700,
+                  fontSize: 14,
+                  color: Color(0xFF991B1B),
+                ),
+              ),
+              Text(
+                '₹ ${_formatAmount(result.totalDebit)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF991B1B),
                   fontFamily: 'monospace',
                 ),
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                softWrap: false,
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Total Credit
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.green.shade50.withOpacity(0.5),
+                Colors.green.shade100.withOpacity(0.3),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.green.shade300.withOpacity(0.5),
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4), // Add spacing to the left
-              child: Text(
-                _formatAmount(result.totalCredit),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Credit',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  color: Colors.green.shade700,
+                  fontSize: 14,
+                  color: Color(0xFF065F46),
+                ),
+              ),
+              Text(
+                '₹ ${_formatAmount(result.totalCredit)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF065F46),
                   fontFamily: 'monospace',
                 ),
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                softWrap: false,
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

@@ -36,7 +36,7 @@ class PrintService {
               pw.SizedBox(height: 4),
               pw.Center(
                 child: pw.Text(
-                  DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+                  DateFormat('dd/MM/yy HH:mm').format(DateTime.now()),
                   style: const pw.TextStyle(fontSize: 10),
                 ),
               ),
@@ -142,46 +142,56 @@ class PrintService {
                 margin: const pw.EdgeInsets.only(top: 4),
               ),
 
-              // Totals Row
+              // Total Debit
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(vertical: 4),
+                padding: const pw.EdgeInsets.all(6),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(width: 1),
+                ),
                 child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.SizedBox(
-                      width: 68, // Dt + Tp + No columns (28 + 12 + 28)
-                      child: pw.Text(
-                        'TOTAL',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                        textAlign: pw.TextAlign.left,
+                    pw.Text(
+                      'Total Debit',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
                       ),
                     ),
-                    pw.Expanded(
-                      child: pw.Padding(
-                        padding: const pw.EdgeInsets.only(right: 4),
-                        child: pw.Text(
-                          _formatAmount(result.totalDebit),
-                          style: pw.TextStyle(
-                            fontWeight: pw.FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                          textAlign: pw.TextAlign.right,
-                        ),
+                    pw.Text(
+                      'Rs. ${_formatAmount(result.totalDebit)}',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 11,
                       ),
                     ),
-                    pw.Expanded(
-                      child: pw.Padding(
-                        padding: const pw.EdgeInsets.only(left: 4),
-                        child: pw.Text(
-                          _formatAmount(result.totalCredit),
-                          style: pw.TextStyle(
-                            fontWeight: pw.FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                          textAlign: pw.TextAlign.right,
-                        ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 4),
+
+              // Total Credit
+              pw.Container(
+                padding: const pw.EdgeInsets.all(6),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(width: 1),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'Total Credit',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                    pw.Text(
+                      'Rs. ${_formatAmount(result.totalCredit)}',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 11,
                       ),
                     ),
                   ],
