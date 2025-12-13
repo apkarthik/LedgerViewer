@@ -105,9 +105,9 @@ class PrintService {
                         textAlign: pw.TextAlign.center,
                       ),
                     ),
-                    // Debit: fixed width increased by ~1 character (approx +6 pts)
+                    // Debit: fixed width
                     pw.SizedBox(
-                      width: 52, // increased from ~45.6 to ~52
+                      width: 52,
                       child: pw.Text(
                         'Debit',
                         style: pw.TextStyle(
@@ -117,8 +117,9 @@ class PrintService {
                         textAlign: pw.TextAlign.right,
                       ),
                     ),
-                    // Credit: take remaining space
-                    pw.Expanded(
+                    // Credit: same width as Debit
+                    pw.SizedBox(
+                      width: 52,
                       child: pw.Text(
                         'Credit',
                         style: pw.TextStyle(
@@ -281,7 +282,7 @@ class PrintService {
               textAlign: pw.TextAlign.center,
             ),
           ),
-          // Debit column: fixed slightly wider (approx +1 char)
+          // Debit column: fixed width
           pw.SizedBox(
             width: 52,
             child: pw.Text(
@@ -290,8 +291,9 @@ class PrintService {
               textAlign: pw.TextAlign.right,
             ),
           ),
-          // Credit: take remaining space
-          pw.Expanded(
+          // Credit: same width as Debit
+          pw.SizedBox(
+            width: 52,
             child: pw.Text(
               _formatAmount(entry.credit),
               style: const pw.TextStyle(fontSize: 9),
@@ -313,17 +315,17 @@ class PrintService {
     
     try {
       // Date comes from CsvService._formatDate() in format "24-Apr-25"
-      // Convert to dd/mm/yy format for display
+      // Convert to ddmmmyy format for display (e.g., "24Apr25")
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
         if (parts.length == 3) {
           final day = parts[0].padLeft(2, '0');
-          final month = _getMonthNumber(parts[1]).padLeft(2, '0');
+          final month = parts[1]; // Keep month as text (e.g., "Apr")
           final rawYear = parts[2];
           final year = rawYear.length >= 2
             ? rawYear.substring(rawYear.length - 2)
             : rawYear.padLeft(2, '0');
-          return '$day/$month/$year';
+          return '$day$month$year';
         }
       }
       
@@ -331,15 +333,6 @@ class PrintService {
     } catch (e) {
       return dateStr;
     }
-  }
-
-  static String _getMonthNumber(String monthName) {
-    const months = {
-      'Jan': '1', 'Feb': '2', 'Mar': '3', 'Apr': '4',
-      'May': '5', 'Jun': '6', 'Jul': '7', 'Aug': '8',
-      'Sep': '9', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-    };
-    return months[monthName] ?? monthName;
   }
 
   static String _formatAmount(String amount) {
