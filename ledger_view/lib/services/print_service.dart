@@ -333,7 +333,7 @@ class PrintService {
         final parts = dateStr.split('-');
         if (parts.length == 3) {
           final day = parts[0].padLeft(2, '0');
-          final monthNum = _getMonthNumber(parts[1]).padLeft(2, '0');
+          final monthNum = _getMonthNumber(parts[1]); // Already zero-padded
           final rawYear = parts[2];
           final year = rawYear.length >= 2
             ? rawYear.substring(rawYear.length - 2)
@@ -350,9 +350,9 @@ class PrintService {
 
   static String _getMonthNumber(String monthName) {
     const months = {
-      'Jan': '1', 'Feb': '2', 'Mar': '3', 'Apr': '4',
-      'May': '5', 'Jun': '6', 'Jul': '7', 'Aug': '8',
-      'Sep': '9', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+      'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+      'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
     };
     return months[monthName] ?? monthName;
   }
