@@ -301,9 +301,12 @@ class PrintService {
       // Handle cases like "dd-mm-yy" by replacing separator
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
-        if (parts.length >= 2) {
-          // Return at least day and month
-          return '${parts[0]}/${parts[1]}${parts.length > 2 ? '/${parts[2]}' : ''}';
+        if (parts.length == 3) {
+          // Full date with day, month, and year
+          return '${parts[0]}/${parts[1]}/${parts[2]}';
+        } else if (parts.length == 2) {
+          // Only day and month
+          return '${parts[0]}/${parts[1]}';
         }
       }
       
