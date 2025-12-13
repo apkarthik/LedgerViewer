@@ -1,0 +1,57 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ledger_view/services/theme_service.dart';
+
+void main() {
+  group('ThemeService', () {
+    test('getThemeName returns correct names for all themes', () {
+      expect(ThemeService.getThemeName(AppTheme.light), equals('Light'));
+      expect(ThemeService.getThemeName(AppTheme.dark), equals('Dark'));
+      expect(ThemeService.getThemeName(AppTheme.blue), equals('Ocean Blue'));
+      expect(ThemeService.getThemeName(AppTheme.green), equals('Nature Green'));
+      expect(ThemeService.getThemeName(AppTheme.purple), equals('Royal Purple'));
+    });
+
+    test('getThemeData returns non-null ThemeData for all themes', () {
+      for (var theme in AppTheme.values) {
+        final themeData = ThemeService.getThemeData(theme);
+        expect(themeData, isNotNull);
+        expect(themeData.useMaterial3, isTrue);
+      }
+    });
+
+    test('light theme has correct brightness', () {
+      final themeData = ThemeService.getThemeData(AppTheme.light);
+      expect(themeData.brightness, equals(Brightness.light));
+    });
+
+    test('dark theme has correct brightness', () {
+      final themeData = ThemeService.getThemeData(AppTheme.dark);
+      expect(themeData.brightness, equals(Brightness.dark));
+    });
+
+    test('all themes have app bar configuration', () {
+      for (var theme in AppTheme.values) {
+        final themeData = ThemeService.getThemeData(theme);
+        expect(themeData.appBarTheme, isNotNull);
+        expect(themeData.appBarTheme.centerTitle, isTrue);
+        expect(themeData.appBarTheme.elevation, equals(0));
+      }
+    });
+
+    test('all themes have card theme configuration', () {
+      for (var theme in AppTheme.values) {
+        final themeData = ThemeService.getThemeData(theme);
+        expect(themeData.cardTheme, isNotNull);
+        expect(themeData.cardTheme.elevation, equals(2));
+      }
+    });
+
+    test('all themes have input decoration theme', () {
+      for (var theme in AppTheme.values) {
+        final themeData = ThemeService.getThemeData(theme);
+        expect(themeData.inputDecorationTheme, isNotNull);
+        expect(themeData.inputDecorationTheme.filled, isTrue);
+      }
+    });
+  });
+}
