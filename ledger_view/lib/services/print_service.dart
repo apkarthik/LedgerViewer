@@ -247,7 +247,7 @@ class PrintService {
                 pw.Container(
                   margin: const pw.EdgeInsets.only(top: 4),
                   child: pw.Text(
-                    'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                    'S - Sales, P - Purchase, R - Receipt, C - Cash, B - Bank',
                     style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
                     textAlign: pw.TextAlign.left,
                   ),
