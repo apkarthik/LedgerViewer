@@ -5,12 +5,12 @@ import 'package:intl/intl.dart';
 import '../models/ledger_entry.dart';
 
 class PrintService {
-  // Thermal printer paper format (80mm width)
-  // 80mm = 226.8 points at 72 DPI
+  // Thermal printer paper format (58mm width)
+  // 58mm = 164.4 points at 72 DPI
   static const thermalPageFormat = PdfPageFormat(
-    226.8, // 80mm width
+    164.4, // 58mm width
     double.infinity, // Continuous feed
-    marginAll: 8, // Small margins for thermal printers
+    marginAll: 6, // Small margins for thermal printers
   );
 
   static Future<void> printLedger(LedgerResult result) async {
@@ -28,7 +28,7 @@ class PrintService {
                 child: pw.Text(
                   'LEDGER STATEMENT',
                   style: pw.TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
@@ -37,7 +37,7 @@ class PrintService {
               pw.Center(
                 child: pw.Text(
                   DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
-                  style: const pw.TextStyle(fontSize: 8),
+                  style: const pw.TextStyle(fontSize: 10),
                 ),
               ),
               pw.SizedBox(height: 8),
@@ -48,18 +48,18 @@ class PrintService {
               pw.Text(
                 'Customer:',
                 style: pw.TextStyle(
-                  fontSize: 8,
+                  fontSize: 10,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
               pw.Text(
                 result.customerName,
-                style: const pw.TextStyle(fontSize: 8),
+                style: const pw.TextStyle(fontSize: 10),
               ),
               pw.SizedBox(height: 2),
               pw.Text(
                 'Period: ${result.dateRange}',
-                style: const pw.TextStyle(fontSize: 7),
+                style: const pw.TextStyle(fontSize: 9),
               ),
               pw.SizedBox(height: 8),
 
@@ -74,33 +74,33 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 38,
+                      width: 32,
                       child: pw.Text(
                         'Dt',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 7,
+                          fontSize: 9,
                         ),
                       ),
                     ),
                     pw.SizedBox(
-                      width: 15,
+                      width: 12,
                       child: pw.Text(
                         'Tp',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 7,
+                          fontSize: 9,
                         ),
                         textAlign: pw.TextAlign.center,
                       ),
                     ),
                     pw.SizedBox(
-                      width: 22,
+                      width: 18,
                       child: pw.Text(
                         'No',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 7,
+                          fontSize: 9,
                         ),
                         textAlign: pw.TextAlign.center,
                       ),
@@ -110,18 +110,17 @@ class PrintService {
                         'Debit',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 7,
+                          fontSize: 9,
                         ),
                         textAlign: pw.TextAlign.right,
                       ),
                     ),
-                    pw.SizedBox(width: 4),
                     pw.Expanded(
                       child: pw.Text(
                         'Credit',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 7,
+                          fontSize: 9,
                         ),
                         textAlign: pw.TextAlign.right,
                       ),
@@ -149,12 +148,12 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 75, // Dt + Tp + No columns
+                      width: 62, // Dt + Tp + No columns
                       child: pw.Text(
                         'TOTAL',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 8,
+                          fontSize: 10,
                         ),
                         textAlign: pw.TextAlign.right,
                       ),
@@ -164,18 +163,17 @@ class PrintService {
                         _formatAmount(result.totalDebit),
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 8,
+                          fontSize: 10,
                         ),
                         textAlign: pw.TextAlign.right,
                       ),
                     ),
-                    pw.SizedBox(width: 4),
                     pw.Expanded(
                       child: pw.Text(
                         _formatAmount(result.totalCredit),
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 8,
+                          fontSize: 10,
                         ),
                         textAlign: pw.TextAlign.right,
                       ),
@@ -200,14 +198,14 @@ class PrintService {
                         'Closing Balance',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 8,
+                          fontSize: 10,
                         ),
                       ),
                       pw.Text(
                         'Rs. ${_formatAmount(result.closingBalance)}',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
+                          fontSize: 11,
                         ),
                       ),
                     ],
@@ -231,40 +229,39 @@ class PrintService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
-            width: 38,
+            width: 32,
             child: pw.Text(
               _formatDateShort(entry.date),
-              style: const pw.TextStyle(fontSize: 6),
+              style: const pw.TextStyle(fontSize: 8),
             ),
           ),
           pw.SizedBox(
-            width: 15,
+            width: 12,
             child: pw.Text(
               _getVchTypeFirstLetter(entry.vchType),
-              style: const pw.TextStyle(fontSize: 6),
+              style: const pw.TextStyle(fontSize: 8),
               textAlign: pw.TextAlign.center,
             ),
           ),
           pw.SizedBox(
-            width: 22,
+            width: 18,
             child: pw.Text(
               entry.vchNo,
-              style: const pw.TextStyle(fontSize: 6),
+              style: const pw.TextStyle(fontSize: 8),
               textAlign: pw.TextAlign.center,
             ),
           ),
           pw.Expanded(
             child: pw.Text(
               _formatAmount(entry.debit),
-              style: const pw.TextStyle(fontSize: 7),
+              style: const pw.TextStyle(fontSize: 9),
               textAlign: pw.TextAlign.right,
             ),
           ),
-          pw.SizedBox(width: 4),
           pw.Expanded(
             child: pw.Text(
               _formatAmount(entry.credit),
-              style: const pw.TextStyle(fontSize: 7),
+              style: const pw.TextStyle(fontSize: 9),
               textAlign: pw.TextAlign.right,
             ),
           ),
