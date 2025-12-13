@@ -239,13 +239,32 @@ class CsvService {
         dateStr = dateStr.split(' ')[0];
       }
       
-      // Parse yyyy-mm-dd format
+      // Parse date format
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
         if (parts.length == 3) {
-          final year = parts[0].length == 4 ? parts[0].substring(2) : parts[0];
-          final month = _getMonthName(int.tryParse(parts[1]) ?? 0);
-          final day = int.tryParse(parts[2]) ?? parts[2];
+          // Determine if format is yyyy-mm-dd or dd-mm-yyyy
+          // If first part is 4 digits, it's yyyy-mm-dd
+          // If last part is 4 digits, it's dd-mm-yyyy
+          String day, month, year;
+          
+          if (parts[0].length == 4) {
+            // yyyy-mm-dd format
+            year = parts[0].substring(2); // Get last 2 digits of year
+            month = _getMonthName(int.tryParse(parts[1]) ?? 0);
+            day = (int.tryParse(parts[2]) ?? parts[2]).toString();
+          } else if (parts[2].length == 4) {
+            // dd-mm-yyyy format
+            day = (int.tryParse(parts[0]) ?? parts[0]).toString();
+            month = _getMonthName(int.tryParse(parts[1]) ?? 0);
+            year = parts[2].substring(2); // Get last 2 digits of year
+          } else {
+            // Assume it's already in a short format, just pass through
+            day = parts[0];
+            month = parts[1];
+            year = parts[2];
+          }
+          
           return '$day-$month-$year';
         }
       }
