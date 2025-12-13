@@ -36,7 +36,7 @@ class PrintService {
               pw.SizedBox(height: 4),
               pw.Center(
                 child: pw.Text(
-                  DateFormat('dd/MM/yy HH:mm').format(DateTime.now()),
+                  DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
                   style: const pw.TextStyle(fontSize: 10),
                 ),
               ),
@@ -313,7 +313,10 @@ class PrintService {
         if (parts.length == 3) {
           final day = parts[0].padLeft(2, '0');
           final month = _getMonthNumber(parts[1]).padLeft(2, '0');
-          final year = parts[2].length == 4 ? parts[2].substring(2) : parts[2];
+          final rawYear = parts[2];
+          final year = rawYear.length >= 2
+            ? rawYear.substring(rawYear.length - 2)
+            : rawYear.padLeft(2, '0');
           return '$day/$month/$year';
         }
       }
