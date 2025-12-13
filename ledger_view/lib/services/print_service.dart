@@ -159,24 +159,29 @@ class PrintService {
                       ),
                     ),
                     pw.Expanded(
-                      child: pw.Text(
-                        _formatAmount(result.totalDebit),
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
+                      child: pw.Padding(
+                        padding: const pw.EdgeInsets.only(right: 4),
+                        child: pw.Text(
+                          _formatAmount(result.totalDebit),
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                          textAlign: pw.TextAlign.right,
                         ),
-                        textAlign: pw.TextAlign.right,
                       ),
                     ),
-                    pw.SizedBox(width: 8), // Space between debit and credit
                     pw.Expanded(
-                      child: pw.Text(
-                        _formatAmount(result.totalCredit),
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
+                      child: pw.Padding(
+                        padding: const pw.EdgeInsets.only(left: 4),
+                        child: pw.Text(
+                          _formatAmount(result.totalCredit),
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                          textAlign: pw.TextAlign.right,
                         ),
-                        textAlign: pw.TextAlign.right,
                       ),
                     ),
                   ],

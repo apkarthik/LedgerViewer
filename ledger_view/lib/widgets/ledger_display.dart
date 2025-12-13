@@ -299,29 +299,34 @@ class LedgerDisplay extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: Text(
-              _formatAmount(result.totalDebit),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: Colors.red.shade700,
-                fontFamily: 'monospace',
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4), // Add spacing to the right
+              child: Text(
+                _formatAmount(result.totalDebit),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Colors.red.shade700,
+                  fontFamily: 'monospace',
+                ),
+                textAlign: TextAlign.right,
               ),
-              textAlign: TextAlign.right,
             ),
           ),
-          const SizedBox(width: 8), // Space between debit and credit
           Expanded(
             flex: 2,
-            child: Text(
-              _formatAmount(result.totalCredit),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: Colors.green.shade700,
-                fontFamily: 'monospace',
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4), // Add spacing to the left
+              child: Text(
+                _formatAmount(result.totalCredit),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Colors.green.shade700,
+                  fontFamily: 'monospace',
+                ),
+                textAlign: TextAlign.right,
               ),
-              textAlign: TextAlign.right,
             ),
           ),
         ],
