@@ -91,6 +91,22 @@ class LedgerDisplay extends StatelessWidget {
                   if (result.closingBalance.isNotEmpty)
                     _buildClosingBalance(),
                   
+                  // Legend
+                  if (result.closingBalance.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      child: const Text(
+                        'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                  
                   const SizedBox(height: 16),
                   
                   // Print Button at bottom
@@ -148,19 +164,20 @@ class LedgerDisplay extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 4,
+            flex: 2,
             child: Text(
-              'Particulars',
+              'Type',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              'Type',
+              'No',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
@@ -212,37 +229,22 @@ class LedgerDisplay extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              entry.date,
+              _formatDateForDisplay(entry.date), // Format for display: 24-Apr-2025 → 24/04/25
               style: const TextStyle(fontSize: 10),
-            ),
-          ),
-          Expanded(
-            flex: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (entry.toBy.isNotEmpty)
-                  Text(
-                    entry.toBy,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: entry.toBy.toLowerCase() == 'to' 
-                          ? Colors.red.shade700 
-                          : Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                Text(
-                  entry.particulars,
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ],
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              entry.vchType,
+              _getVchTypeFirstLetter(entry.vchType),
+              style: const TextStyle(fontSize: 10),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              entry.vchNo,
               style: const TextStyle(fontSize: 10),
               textAlign: TextAlign.center,
             ),
@@ -285,40 +287,46 @@ class LedgerDisplay extends StatelessWidget {
       child: Row(
         children: [
           const Expanded(
-            flex: 9,
+            flex: 7,
             child: Text(
               'TOTAL',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.left,
             ),
           ),
           Expanded(
             flex: 2,
-            child: Text(
-              _formatAmount(result.totalDebit),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: Colors.red.shade700,
-                fontFamily: 'monospace',
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4), // Add spacing to the right
+              child: Text(
+                _formatAmount(result.totalDebit),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Colors.red.shade700,
+                  fontFamily: 'monospace',
+                ),
+                textAlign: TextAlign.right,
               ),
-              textAlign: TextAlign.right,
             ),
           ),
           Expanded(
             flex: 2,
-            child: Text(
-              _formatAmount(result.totalCredit),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: Colors.green.shade700,
-                fontFamily: 'monospace',
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4), // Add spacing to the left
+              child: Text(
+                _formatAmount(result.totalCredit),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Colors.green.shade700,
+                  fontFamily: 'monospace',
+                ),
+                textAlign: TextAlign.right,
               ),
-              textAlign: TextAlign.right,
             ),
           ),
         ],
@@ -382,5 +390,41 @@ class LedgerDisplay extends StatelessWidget {
     }
     
     return amount;
+  }
+
+  String _getVchTypeFirstLetter(String vchType) {
+    if (vchType.isEmpty) return '';
+    return vchType[0].toUpperCase();
+  }
+
+  String _formatDateForDisplay(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    
+    try {
+      // Date comes from CsvService._formatDate() in format "24-Apr-2025"
+      // Convert to dd/mm/yy format for display
+      if (dateStr.contains('-')) {
+        final parts = dateStr.split('-');
+        if (parts.length == 3) {
+          final day = parts[0].padLeft(2, '0');
+          final month = _getMonthNumber(parts[1]).padLeft(2, '0');
+          final year = parts[2].length == 4 ? parts[2].substring(2) : parts[2];
+          return '$day/$month/$year';
+        }
+      }
+      
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  String _getMonthNumber(String monthName) {
+    const months = {
+      'Jan': '1', 'Feb': '2', 'Mar': '3', 'Apr': '4',
+      'May': '5', 'Jun': '6', 'Jul': '7', 'Aug': '8',
+      'Sep': '9', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+    };
+    return months[monthName] ?? monthName;
   }
 }

@@ -74,7 +74,7 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 32,
+                      width: 28,
                       child: pw.Text(
                         'Dt',
                         style: pw.TextStyle(
@@ -95,7 +95,7 @@ class PrintService {
                       ),
                     ),
                     pw.SizedBox(
-                      width: 18,
+                      width: 28,
                       child: pw.Text(
                         'No',
                         style: pw.TextStyle(
@@ -148,34 +148,40 @@ class PrintService {
                 child: pw.Row(
                   children: [
                     pw.SizedBox(
-                      width: 62, // Dt + Tp + No columns
+                      width: 68, // Dt + Tp + No columns (28 + 12 + 28)
                       child: pw.Text(
                         'TOTAL',
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
                           fontSize: 10,
                         ),
-                        textAlign: pw.TextAlign.right,
+                        textAlign: pw.TextAlign.left,
                       ),
                     ),
                     pw.Expanded(
-                      child: pw.Text(
-                        _formatAmount(result.totalDebit),
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
+                      child: pw.Padding(
+                        padding: const pw.EdgeInsets.only(right: 4),
+                        child: pw.Text(
+                          _formatAmount(result.totalDebit),
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                          textAlign: pw.TextAlign.right,
                         ),
-                        textAlign: pw.TextAlign.right,
                       ),
                     ),
                     pw.Expanded(
-                      child: pw.Text(
-                        _formatAmount(result.totalCredit),
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
+                      child: pw.Padding(
+                        padding: const pw.EdgeInsets.only(left: 4),
+                        child: pw.Text(
+                          _formatAmount(result.totalCredit),
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                          textAlign: pw.TextAlign.right,
                         ),
-                        textAlign: pw.TextAlign.right,
                       ),
                     ),
                   ],
@@ -211,6 +217,17 @@ class PrintService {
                     ],
                   ),
                 ),
+
+              // Legend
+              if (result.closingBalance.isNotEmpty)
+                pw.Container(
+                  margin: const pw.EdgeInsets.only(top: 6),
+                  child: pw.Text(
+                    'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                    style: const pw.TextStyle(fontSize: 8),
+                    textAlign: pw.TextAlign.left,
+                  ),
+                ),
             ],
           );
         },
@@ -229,7 +246,7 @@ class PrintService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
-            width: 32,
+            width: 28,
             child: pw.Text(
               _formatDateShort(entry.date),
               style: const pw.TextStyle(fontSize: 8),
@@ -244,7 +261,7 @@ class PrintService {
             ),
           ),
           pw.SizedBox(
-            width: 18,
+            width: 28,
             child: pw.Text(
               entry.vchNo,
               style: const pw.TextStyle(fontSize: 8),
@@ -278,19 +295,32 @@ class PrintService {
   static String _formatDateShort(String dateStr) {
     if (dateStr.isEmpty) return '';
     
-    // Extract just the day and month if possible
-    // Expected format: "24-Apr-2025" or similar
     try {
+      // Date comes from CsvService._formatDate() in format "24-Apr-2025"
+      // Convert to dd/mm/yy format for display
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
-        if (parts.length >= 2) {
-          return '${parts[0]}-${parts[1]}'; // Return day-month only
+        if (parts.length == 3) {
+          final day = parts[0].padLeft(2, '0');
+          final month = _getMonthNumber(parts[1]).padLeft(2, '0');
+          final year = parts[2].length == 4 ? parts[2].substring(2) : parts[2];
+          return '$day/$month/$year';
         }
       }
+      
       return dateStr;
     } catch (e) {
       return dateStr;
     }
+  }
+
+  static String _getMonthNumber(String monthName) {
+    const months = {
+      'Jan': '1', 'Feb': '2', 'Mar': '3', 'Apr': '4',
+      'May': '5', 'Jun': '6', 'Jul': '7', 'Aug': '8',
+      'Sep': '9', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+    };
+    return months[monthName] ?? monthName;
   }
 
   static String _formatAmount(String amount) {
