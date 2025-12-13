@@ -290,9 +290,27 @@ class PrintService {
   static String _formatDateShort(String dateStr) {
     if (dateStr.isEmpty) return '';
     
-    // Date is already formatted as dd/mm/yy by csv_service
-    // If format is different, return as-is for display
-    return dateStr;
+    try {
+      // Date should already be formatted as dd/mm/yy by csv_service
+      // If it contains '/' separator, assume it's correctly formatted
+      if (dateStr.contains('/')) {
+        return dateStr;
+      }
+      
+      // Fallback: if format is different, try to extract useful info
+      // Handle cases like "dd-mm-yy" by replacing separator
+      if (dateStr.contains('-')) {
+        final parts = dateStr.split('-');
+        if (parts.length >= 2) {
+          // Return at least day and month
+          return '${parts[0]}/${parts[1]}${parts.length > 2 ? '/${parts[2]}' : ''}';
+        }
+      }
+      
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
   }
 
   static String _formatAmount(String amount) {

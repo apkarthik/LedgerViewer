@@ -239,14 +239,26 @@ class CsvService {
         dateStr = dateStr.split(' ')[0];
       }
       
-      // Parse yyyy-mm-dd format
+      // Parse yyyy-mm-dd format (Excel standard)
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
         if (parts.length == 3) {
-          final year = parts[0].length == 4 ? parts[0].substring(2) : parts[0];
-          final month = parts[1].padLeft(2, '0');
-          final day = parts[2].padLeft(2, '0');
-          return '$day/$month/$year';
+          // Check if first part is a 4-digit year (yyyy-mm-dd format)
+          if (parts[0].length == 4) {
+            final year = parts[0].substring(2); // Last 2 digits of year
+            final month = parts[1].padLeft(2, '0');
+            final day = parts[2].padLeft(2, '0');
+            return '$day/$month/$year';
+          } else if (parts[2].length == 4) {
+            // Handle dd-mm-yyyy format if present
+            final day = parts[0].padLeft(2, '0');
+            final month = parts[1].padLeft(2, '0');
+            final year = parts[2].substring(2); // Last 2 digits of year
+            return '$day/$month/$year';
+          } else {
+            // Already in short format, just replace separators
+            return dateStr.replaceAll('-', '/');
+          }
         }
       }
       
