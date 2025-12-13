@@ -57,7 +57,7 @@ class PrintService {
               child: pw.Row(
                 children: [
                   pw.Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: pw.Text(
                       'Date',
                       style: pw.TextStyle(
@@ -67,19 +67,9 @@ class PrintService {
                     ),
                   ),
                   pw.Expanded(
-                    flex: 3,
+                    flex: 2,
                     child: pw.Text(
-                      'Particulars',
-                      style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                  pw.Expanded(
-                    flex: 1,
-                    child: pw.Text(
-                      'Type',
+                      'Vch Type',
                       style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: 10,
@@ -90,6 +80,17 @@ class PrintService {
                   pw.Expanded(
                     flex: 2,
                     child: pw.Text(
+                      'Vch No.',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                      textAlign: pw.TextAlign.center,
+                    ),
+                  ),
+                  pw.Expanded(
+                    flex: 3,
+                    child: pw.Text(
                       'Debit',
                       style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
@@ -99,7 +100,7 @@ class PrintService {
                     ),
                   ),
                   pw.Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: pw.Text(
                       'Credit',
                       style: pw.TextStyle(
@@ -126,7 +127,7 @@ class PrintService {
               child: pw.Row(
                 children: [
                   pw.Expanded(
-                    flex: 6,
+                    flex: 7,
                     child: pw.Text(
                       'TOTAL',
                       style: pw.TextStyle(
@@ -137,7 +138,7 @@ class PrintService {
                     ),
                   ),
                   pw.Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: pw.Text(
                       _formatAmount(result.totalDebit),
                       style: pw.TextStyle(
@@ -148,7 +149,7 @@ class PrintService {
                     ),
                   ),
                   pw.Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: pw.Text(
                       _formatAmount(result.totalCredit),
                       style: pw.TextStyle(
@@ -204,6 +205,12 @@ class PrintService {
   }
 
   static pw.Widget _buildEntryRow(LedgerEntry entry) {
+    // Get first letter of vchType
+    String vchTypeFirstLetter = '';
+    if (entry.vchType.isNotEmpty) {
+      vchTypeFirstLetter = entry.vchType[0].toUpperCase();
+    }
+    
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       decoration: const pw.BoxDecoration(
@@ -215,36 +222,16 @@ class PrintService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Expanded(
-            flex: 2,
+            flex: 3,
             child: pw.Text(
               entry.date,
               style: const pw.TextStyle(fontSize: 9),
             ),
           ),
           pw.Expanded(
-            flex: 3,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                if (entry.toBy.isNotEmpty)
-                  pw.Text(
-                    entry.toBy,
-                    style: pw.TextStyle(
-                      fontSize: 9,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                pw.Text(
-                  entry.particulars,
-                  style: const pw.TextStyle(fontSize: 9),
-                ),
-              ],
-            ),
-          ),
-          pw.Expanded(
-            flex: 1,
+            flex: 2,
             child: pw.Text(
-              entry.vchType,
+              vchTypeFirstLetter,
               style: const pw.TextStyle(fontSize: 9),
               textAlign: pw.TextAlign.center,
             ),
@@ -252,13 +239,21 @@ class PrintService {
           pw.Expanded(
             flex: 2,
             child: pw.Text(
+              entry.vchNo,
+              style: const pw.TextStyle(fontSize: 9),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+          pw.Expanded(
+            flex: 3,
+            child: pw.Text(
               _formatAmount(entry.debit),
               style: const pw.TextStyle(fontSize: 9),
               textAlign: pw.TextAlign.right,
             ),
           ),
           pw.Expanded(
-            flex: 2,
+            flex: 3,
             child: pw.Text(
               _formatAmount(entry.credit),
               style: const pw.TextStyle(fontSize: 9),

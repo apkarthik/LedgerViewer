@@ -157,12 +157,11 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshLedgerData() async {
-    // Get both master and ledger sheet URLs
+    // Get only master sheet URL (refresh should only take master data)
     final masterUrl = await StorageService.getMasterSheetUrl();
-    final ledgerUrl = await StorageService.getLedgerSheetUrl();
     
-    if (masterUrl == null || masterUrl.isEmpty || ledgerUrl == null || ledgerUrl.isEmpty) {
-      _showError('Please configure both Master and Ledger Sheet URLs in Settings first');
+    if (masterUrl == null || masterUrl.isEmpty) {
+      _showError('Please configure Master Sheet URL in Settings first');
       return;
     }
 
@@ -181,7 +180,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               SizedBox(width: 12),
-              Text('Refreshing data from Google Sheets...'),
+              Text('Refreshing master data from Google Sheets...'),
             ],
           ),
           backgroundColor: Colors.blue.shade600,
@@ -192,11 +191,8 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      // Fetch both master and ledger data concurrently for better performance
-      final [masterData, ledgerData] = await Future.wait([
-        CsvService.fetchCsvData(masterUrl),
-        CsvService.fetchCsvData(ledgerUrl),
-      ]);
+      // Fetch only master data
+      final masterData = await CsvService.fetchCsvData(masterUrl);
       
       // Update the cached master data
       await StorageService.saveCachedMasterData(masterData);
@@ -204,14 +200,10 @@ class HomeScreenState extends State<HomeScreen> {
       // Parse and update customer list
       final customers = CsvService.parseCustomerData(masterData);
       
-      // Update the cached ledger data
-      await StorageService.saveCachedLedgerData(ledgerData);
-
-      // Update state to reflect we have both master and ledger data
+      // Update state to reflect we have master data
       setState(() {
         _allCustomers = customers;
         _hasLoadedCustomers = customers.isNotEmpty;
-        _hasLedgerUrl = true;
       });
 
       if (mounted) {
@@ -222,7 +214,7 @@ class HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Master and ledger data refreshed successfully'),
+                Text('Master data refreshed successfully'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -279,7 +271,7 @@ class HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshLedgerData,
-            tooltip: 'Refresh Master and Ledger Data',
+            tooltip: 'Refresh Master Data',
           ),
           IconButton(
             icon: const Icon(Icons.settings),
@@ -338,6 +330,7 @@ class HomeScreenState extends State<HomeScreen> {
                             return TextField(
                               controller: controller,
                               focusNode: focusNode,
+                              keyboardType: TextInputType.text,
                               decoration: InputDecoration(
                                 hintText: 'e.g., 1139B, Pushpa, or 9876543210',
                                 prefixIcon: const Icon(Icons.search),
