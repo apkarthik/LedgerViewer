@@ -306,7 +306,7 @@ class PrintService {
     if (dateStr.isEmpty) return '';
     
     try {
-      // Date comes from CsvService._formatDate() in format "24-Apr-2025"
+      // Date comes from CsvService._formatDate() in format "24-Apr-25"
       // Convert to dd/mm/yy format for display
       if (dateStr.contains('-')) {
         final parts = dateStr.split('-');
