@@ -229,7 +229,7 @@ class LedgerDisplay extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              entry.date,
+              entry.date, // Already formatted as dd/mm/yy by csv_service
               style: const TextStyle(fontSize: 10),
             ),
           ),
