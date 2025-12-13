@@ -259,9 +259,12 @@ class HomeScreenState extends State<HomeScreen> {
         title: const Text('Ledger Search'),
         automaticallyImplyLeading: false,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary,
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -386,9 +389,9 @@ class HomeScreenState extends State<HomeScreen> {
                                           dense: true,
                                           title: Text(
                                             customer.customerId,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: Color(0xFF6366F1),
+                                              color: Theme.of(context).colorScheme.primary,
                                             ),
                                           ),
                                           subtitle: Text(customer.name),
@@ -473,12 +476,12 @@ class HomeScreenState extends State<HomeScreen> {
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6366F1).withOpacity(0.1),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.person,
-                            color: Color(0xFF6366F1),
+                            color: Theme.of(context).colorScheme.primary,
                             size: 20,
                           ),
                         ),
@@ -486,7 +489,6 @@ class HomeScreenState extends State<HomeScreen> {
                           'Customer Details',
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1F2937),
                               ),
                         ),
                         children: [
@@ -580,7 +582,6 @@ class HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1F2937),
             ),
           ),
         ),

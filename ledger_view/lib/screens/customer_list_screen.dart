@@ -105,9 +105,12 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         title: const Text('Customer List'),
         automaticallyImplyLeading: false,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary,
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -151,7 +154,6 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                         .titleMedium
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF1F2937),
                                         ),
                                   ),
                                   const SizedBox(height: 4),
@@ -186,7 +188,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                   : const Icon(Icons.cloud_download),
                               label: Text(_isLoading ? 'Loading...' : 'Load'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6366F1),
+                                backgroundColor: Theme.of(context).colorScheme.primary,
                                 foregroundColor: Colors.white,
                               ),
                             ),
@@ -404,10 +406,10 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               flex: 2,
               child: Text(
                 customer.customerId,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
-                  color: Color(0xFF6366F1),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
@@ -434,10 +436,10 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             SizedBox(
               width: 48,
               child: IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: Color(0xFF6366F1),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 onPressed: () => _navigateToCustomerLedger(customer),
                 tooltip: 'View Ledger',

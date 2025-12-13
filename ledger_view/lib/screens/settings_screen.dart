@@ -357,12 +357,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6366F1).withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.receipt_long,
-                                color: Color(0xFF6366F1),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -410,8 +410,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             icon: const Icon(Icons.content_paste),
                             label: const Text('Paste from Clipboard'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF6366F1),
-                              side: const BorderSide(color: Color(0xFF6366F1)),
+                              foregroundColor: Theme.of(context).colorScheme.primary,
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
@@ -442,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : const Icon(Icons.save),
                     label: const Text('Save Settings'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
