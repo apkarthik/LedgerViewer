@@ -113,8 +113,6 @@ class PrintService {
                           fontSize: 9,
                         ),
                         textAlign: pw.TextAlign.right,
-                        maxLines: 1,
-                        overflow: pw.TextOverflow.ellipsis,
                       ),
                     ),
                     pw.Expanded(
@@ -125,8 +123,6 @@ class PrintService {
                           fontSize: 9,
                         ),
                         textAlign: pw.TextAlign.right,
-                        maxLines: 1,
-                        overflow: pw.TextOverflow.ellipsis,
                       ),
                     ),
                   ],
