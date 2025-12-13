@@ -126,6 +126,7 @@ class PrintService {
               padding: const pw.EdgeInsets.all(8),
               child: pw.Row(
                 children: [
+                  // Spans Date (3) + Vch Type (2) + Vch No. (2) = 7 columns
                   pw.Expanded(
                     flex: 7,
                     child: pw.Text(
@@ -205,12 +206,6 @@ class PrintService {
   }
 
   static pw.Widget _buildEntryRow(LedgerEntry entry) {
-    // Get first letter of vchType
-    String vchTypeFirstLetter = '';
-    if (entry.vchType.isNotEmpty) {
-      vchTypeFirstLetter = entry.vchType[0].toUpperCase();
-    }
-    
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       decoration: const pw.BoxDecoration(
@@ -231,7 +226,7 @@ class PrintService {
           pw.Expanded(
             flex: 2,
             child: pw.Text(
-              vchTypeFirstLetter,
+              _getVchTypeFirstLetter(entry.vchType),
               style: const pw.TextStyle(fontSize: 9),
               textAlign: pw.TextAlign.center,
             ),
@@ -263,6 +258,11 @@ class PrintService {
         ],
       ),
     );
+  }
+
+  static String _getVchTypeFirstLetter(String vchType) {
+    if (vchType.isEmpty) return '';
+    return vchType[0].toUpperCase();
   }
 
   static String _formatAmount(String amount) {
