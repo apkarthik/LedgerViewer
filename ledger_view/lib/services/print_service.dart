@@ -290,8 +290,8 @@ class PrintService {
   static String _formatDateShort(String dateStr) {
     if (dateStr.isEmpty) return '';
     
-    // Expected format: "dd/mm/yy" from csv_service
-    // Just return as is since it's already in the correct format
+    // Date is already formatted as dd/mm/yy by csv_service
+    // If format is different, return as-is for display
     return dateStr;
   }
 
