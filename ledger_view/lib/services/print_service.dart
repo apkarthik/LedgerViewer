@@ -105,7 +105,9 @@ class PrintService {
                         textAlign: pw.TextAlign.center,
                       ),
                     ),
-                    pw.Expanded(
+                    // Debit: fixed width increased by ~1 character (approx +6 pts)
+                    pw.SizedBox(
+                      width: 52, // increased from ~45.6 to ~52
                       child: pw.Text(
                         'Debit',
                         style: pw.TextStyle(
@@ -115,6 +117,7 @@ class PrintService {
                         textAlign: pw.TextAlign.right,
                       ),
                     ),
+                    // Credit: take remaining space
                     pw.Expanded(
                       child: pw.Text(
                         'Credit',
@@ -278,13 +281,16 @@ class PrintService {
               textAlign: pw.TextAlign.center,
             ),
           ),
-          pw.Expanded(
+          // Debit column: fixed slightly wider (approx +1 char)
+          pw.SizedBox(
+            width: 52,
             child: pw.Text(
               _formatAmount(entry.debit),
               style: const pw.TextStyle(fontSize: 9),
               textAlign: pw.TextAlign.right,
             ),
           ),
+          // Credit: take remaining space
           pw.Expanded(
             child: pw.Text(
               _formatAmount(entry.credit),
