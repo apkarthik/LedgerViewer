@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/ledger_entry.dart';
 import '../services/print_service.dart';
+import '../utils/voucher_type_mapper.dart';
 
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
@@ -97,7 +98,7 @@ class LedgerDisplay extends StatelessWidget {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                       child: const Text(
-                        'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                        'S - Sales, P - Purchase, C - Cash Receipt, B - Bank Receipt, J - Journal',
                         style: TextStyle(
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
@@ -236,7 +237,7 @@ class LedgerDisplay extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              _getVchTypeFirstLetter(entry.vchType),
+              VoucherTypeMapper.getVchTypeFirstLetter(entry.vchType, entry.particulars),
               style: const TextStyle(fontSize: 10),
               textAlign: TextAlign.center,
             ),
@@ -422,11 +423,6 @@ class LedgerDisplay extends StatelessWidget {
     }
     
     return amount;
-  }
-
-  String _getVchTypeFirstLetter(String vchType) {
-    if (vchType.isEmpty) return '';
-    return vchType[0].toUpperCase();
   }
 
   String _formatDateForDisplay(String dateStr) {
