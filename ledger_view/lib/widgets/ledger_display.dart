@@ -448,7 +448,8 @@ class LedgerDisplay extends StatelessWidget {
           particularsLower.contains('axis')) {
         return 'B';
       }
-      // Default receipts to 'C' for cash
+      // Default receipts to 'C' for cash (as per business requirement in sample_bill.xlsx)
+      // This covers cash receipts and any other receipt types not explicitly categorized as bank
       return 'C';
     }
     
