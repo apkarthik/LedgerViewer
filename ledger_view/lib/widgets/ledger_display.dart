@@ -97,7 +97,7 @@ class LedgerDisplay extends StatelessWidget {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                       child: const Text(
-                        'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                        'S - Sales, P - Purchase, C - Cash Receipt, B - Bank Receipt, J - Journal',
                         style: TextStyle(
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
@@ -236,7 +236,7 @@ class LedgerDisplay extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              _getVchTypeFirstLetter(entry.vchType),
+              _getVchTypeFirstLetter(entry.vchType, entry.particulars),
               style: const TextStyle(fontSize: 10),
               textAlign: TextAlign.center,
             ),
@@ -424,15 +424,33 @@ class LedgerDisplay extends StatelessWidget {
     return amount;
   }
 
-  String _getVchTypeFirstLetter(String vchType) {
+  String _getVchTypeFirstLetter(String vchType, String particulars) {
     if (vchType.isEmpty) return '';
     
-    // Map voucher types according to legend: S-Sales, P-Purchase, C-Receipt, J-Journal, B-all others
+    // Map voucher types according to legend: S-Sales, P-Purchase, C-Cash Receipt, B-Bank Receipt, J-Journal
     final type = vchType.toLowerCase();
     if (type.startsWith('sales')) return 'S';
     if (type.startsWith('purchase')) return 'P';
-    if (type.startsWith('receipt')) return 'C';
     if (type.startsWith('journal')) return 'J';
+    
+    // For receipts, distinguish between Cash (C) and Bank (B)
+    if (type.startsWith('receipt')) {
+      final particularsLower = particulars.toLowerCase();
+      // Check if it's a cash receipt
+      if (particularsLower.contains('cash')) {
+        return 'C';
+      }
+      // Check if it's a bank receipt (contains 'bank' or common bank names)
+      if (particularsLower.contains('bank') || 
+          particularsLower.contains('hdfc') ||
+          particularsLower.contains('icici') ||
+          particularsLower.contains('sbi') ||
+          particularsLower.contains('axis')) {
+        return 'B';
+      }
+      // Default receipts to 'C' for cash
+      return 'C';
+    }
     
     // All other types return 'B'
     return 'B';
