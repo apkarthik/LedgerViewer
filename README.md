@@ -66,7 +66,7 @@ The app displays full ledger details on screen but prints a simplified format fo
 
 **Print/PDF Output (Optimized for 58mm Thermal Printer):**
 - Date (dd/mm/yy format, e.g., 24/04/25), Vch Type (first letter only), Vch No., Debit, Credit
-- Examples: Receipt → R, Purchase → P, Sales → S, Cash → C, Bank → B
+- Examples: Sales → S, Purchase → P, Cash Receipt → C, Bank Receipt → B, Journal → J
 - Uses narrow/condensed fonts to maximize space on thermal paper
 - Auto-adjustable column widths for debit and credit amounts
 
