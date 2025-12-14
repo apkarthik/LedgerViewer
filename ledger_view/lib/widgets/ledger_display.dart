@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/ledger_entry.dart';
 import '../services/print_service.dart';
+import '../utils/voucher_type_mapper.dart';
 
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
@@ -236,7 +237,7 @@ class LedgerDisplay extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              _getVchTypeFirstLetter(entry.vchType, entry.particulars),
+              VoucherTypeMapper.getVchTypeFirstLetter(entry.vchType, entry.particulars),
               style: const TextStyle(fontSize: 10),
               textAlign: TextAlign.center,
             ),
@@ -422,39 +423,6 @@ class LedgerDisplay extends StatelessWidget {
     }
     
     return amount;
-  }
-
-  String _getVchTypeFirstLetter(String vchType, String particulars) {
-    if (vchType.isEmpty) return '';
-    
-    // Map voucher types according to legend: S-Sales, P-Purchase, C-Cash Receipt, B-Bank Receipt, J-Journal
-    final type = vchType.toLowerCase();
-    if (type.startsWith('sales')) return 'S';
-    if (type.startsWith('purchase')) return 'P';
-    if (type.startsWith('journal')) return 'J';
-    
-    // For receipts, distinguish between Cash (C) and Bank (B)
-    if (type.startsWith('receipt')) {
-      final particularsLower = particulars.toLowerCase();
-      // Check if it's a cash receipt
-      if (particularsLower.contains('cash')) {
-        return 'C';
-      }
-      // Check if it's a bank receipt (contains 'bank' or common bank names)
-      if (particularsLower.contains('bank') || 
-          particularsLower.contains('hdfc') ||
-          particularsLower.contains('icici') ||
-          particularsLower.contains('sbi') ||
-          particularsLower.contains('axis')) {
-        return 'B';
-      }
-      // Default receipts to 'C' for cash (as per business requirement in sample_bill.xlsx)
-      // This covers cash receipts and any other receipt types not explicitly categorized as bank
-      return 'C';
-    }
-    
-    // All other types return 'B'
-    return 'B';
   }
 
   String _formatDateForDisplay(String dateStr) {
