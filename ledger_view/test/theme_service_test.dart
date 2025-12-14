@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ledger_view/services/theme_service.dart';
 
@@ -11,7 +12,7 @@ void main() {
       expect(ThemeService.getThemeName(AppTheme.purple), equals('Royal Purple'));
     });
 
-    test('getThemeData returns non-null ThemeData for all themes', () {
+    testWidgets('getThemeData returns non-null ThemeData for all themes', (WidgetTester tester) async {
       for (var theme in AppTheme.values) {
         final themeData = ThemeService.getThemeData(theme);
         expect(themeData, isNotNull);
@@ -19,17 +20,17 @@ void main() {
       }
     });
 
-    test('light theme has correct brightness', () {
+    testWidgets('light theme has correct brightness', (WidgetTester tester) async {
       final themeData = ThemeService.getThemeData(AppTheme.light);
       expect(themeData.brightness, equals(Brightness.light));
     });
 
-    test('dark theme has correct brightness', () {
+    testWidgets('dark theme has correct brightness', (WidgetTester tester) async {
       final themeData = ThemeService.getThemeData(AppTheme.dark);
       expect(themeData.brightness, equals(Brightness.dark));
     });
 
-    test('all themes have app bar configuration', () {
+    testWidgets('all themes have app bar configuration', (WidgetTester tester) async {
       for (var theme in AppTheme.values) {
         final themeData = ThemeService.getThemeData(theme);
         expect(themeData.appBarTheme, isNotNull);
@@ -38,7 +39,7 @@ void main() {
       }
     });
 
-    test('all themes have card theme configuration', () {
+    testWidgets('all themes have card theme configuration', (WidgetTester tester) async {
       for (var theme in AppTheme.values) {
         final themeData = ThemeService.getThemeData(theme);
         expect(themeData.cardTheme, isNotNull);
@@ -46,7 +47,7 @@ void main() {
       }
     });
 
-    test('all themes have input decoration theme', () {
+    testWidgets('all themes have input decoration theme', (WidgetTester tester) async {
       for (var theme in AppTheme.values) {
         final themeData = ThemeService.getThemeData(theme);
         expect(themeData.inputDecorationTheme, isNotNull);
