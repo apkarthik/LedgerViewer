@@ -53,8 +53,6 @@ class _MainScreenState extends State<MainScreen> {
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF6366F1),
-        unselectedItemColor: Colors.grey.shade600,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),

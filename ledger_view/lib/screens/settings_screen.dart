@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../services/storage_service.dart';
 import '../services/csv_service.dart';
+import '../services/theme_service.dart';
+import '../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onSettingsSaved;
@@ -226,9 +229,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -357,12 +357,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6366F1).withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.receipt_long,
-                                color: Color(0xFF6366F1),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -410,8 +410,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             icon: const Icon(Icons.content_paste),
                             label: const Text('Paste from Clipboard'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF6366F1),
-                              side: const BorderSide(color: Color(0xFF6366F1)),
+                              foregroundColor: Theme.of(context).colorScheme.primary,
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
@@ -442,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : const Icon(Icons.save),
                     label: const Text('Save Settings'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -512,6 +512,129 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 16),
+
+                // Theme Selection Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.palette,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'App Theme',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  Text(
+                                    'Choose your preferred color scheme',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Consumer<ThemeProvider>(
+                          builder: (context, themeProvider, child) {
+                            return Column(
+                              children: AppTheme.values.map((theme) {
+                                final isSelected = themeProvider.currentTheme == theme;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      themeProvider.setTheme(theme);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Theme changed to ${ThemeService.getThemeName(theme)}'),
+                                          backgroundColor: Theme.of(context).colorScheme.primary,
+                                          behavior: SnackBarBehavior.floating,
+                                          duration: const Duration(seconds: 1),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: isSelected 
+                                              ? Theme.of(context).colorScheme.primary
+                                              : Colors.grey.shade300,
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: isSelected
+                                            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                                            : null,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            ThemeService.getThemeIcon(theme),
+                                            color: isSelected
+                                                ? Theme.of(context).colorScheme.primary
+                                                : Colors.grey.shade600,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              ThemeService.getThemeName(theme),
+                                              style: TextStyle(
+                                                fontWeight: isSelected 
+                                                    ? FontWeight.bold 
+                                                    : FontWeight.normal,
+                                                color: isSelected
+                                                    ? Theme.of(context).colorScheme.primary
+                                                    : null,
+                                              ),
+                                            ),
+                                          ),
+                                          if (isSelected)
+                                            Icon(
+                                              Icons.check_circle,
+                                              color: Theme.of(context).colorScheme.primary,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
 
                 // App Info
@@ -528,7 +651,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         'LedgerView',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1F2937),
                             ),
                       ),
                       const SizedBox(height: 4),
