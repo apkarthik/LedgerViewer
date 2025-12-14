@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../services/storage_service.dart';
 import '../services/csv_service.dart';
+import '../services/theme_service.dart';
+import '../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onSettingsSaved;
@@ -226,9 +229,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -357,12 +357,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6366F1).withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.receipt_long,
-                                color: Color(0xFF6366F1),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -410,8 +410,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             icon: const Icon(Icons.content_paste),
                             label: const Text('Paste from Clipboard'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF6366F1),
-                              side: const BorderSide(color: Color(0xFF6366F1)),
+                              foregroundColor: Theme.of(context).colorScheme.primary,
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
@@ -442,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : const Icon(Icons.save),
                     label: const Text('Save Settings'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -512,6 +512,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 16),
+
+                // Theme Selection Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.palette,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'App Theme',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  Text(
+                                    'Choose your preferred color scheme',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Consumer<ThemeProvider>(
+                          builder: (context, themeProvider, child) {
+                            return DropdownButtonFormField<AppTheme>(
+                              value: themeProvider.currentTheme,
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  ThemeService.getThemeIcon(themeProvider.currentTheme),
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              items: AppTheme.values.map((theme) {
+                                return DropdownMenuItem<AppTheme>(
+                                  value: theme,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        ThemeService.getThemeIcon(theme),
+                                        size: 20,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(ThemeService.getThemeName(theme)),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (AppTheme? theme) {
+                                if (theme != null) {
+                                  themeProvider.setTheme(theme);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Theme changed to ${ThemeService.getThemeName(theme)}'),
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: const Duration(seconds: 1),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
 
                 // App Info
@@ -528,7 +637,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         'LedgerView',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1F2937),
                             ),
                       ),
                       const SizedBox(height: 4),

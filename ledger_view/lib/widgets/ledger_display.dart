@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/ledger_entry.dart';
 import '../services/print_service.dart';
 import '../utils/voucher_type_mapper.dart';
@@ -11,6 +12,14 @@ class LedgerDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final currentTheme = themeProvider.currentTheme;
+    final headerGradient = ThemeService.getLedgerHeaderGradient(currentTheme);
+    final debitColor = ThemeService.getLedgerDebitColor(currentTheme);
+    final creditColor = ThemeService.getLedgerCreditColor(currentTheme);
+    final tableHeaderColor = ThemeService.getLedgerTableHeaderColor(currentTheme);
+    final printButtonColor = ThemeService.getLedgerPrintButtonColor(currentTheme);
+
     return Card(
       margin: EdgeInsets.zero,
       child: Column(
@@ -19,13 +28,13 @@ class LedgerDisplay extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                colors: headerGradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
@@ -75,22 +84,22 @@ class LedgerDisplay extends StatelessWidget {
               child: Column(
                 children: [
                   // Table Header
-                  _buildTableHeader(),
+                  _buildTableHeader(tableHeaderColor),
                   const Divider(height: 1, thickness: 2),
                   
                   // Entries
-                  ...result.entries.map((entry) => _buildEntryRow(entry)),
+                  ...result.entries.map((entry) => _buildEntryRow(entry, debitColor, creditColor)),
                   
                   const Divider(height: 1, thickness: 2),
                   
                   // Totals
-                  _buildTotalsRow(),
+                  _buildTotalsRow(debitColor, creditColor),
                   
                   const SizedBox(height: 8),
                   
                   // Balance
                   if (result.closingBalance.isNotEmpty)
-                    _buildClosingBalance(),
+                    _buildClosingBalance(creditColor),
                   
                   // Legend
                   if (result.closingBalance.isNotEmpty)
@@ -118,7 +127,7 @@ class LedgerDisplay extends StatelessWidget {
                       icon: const Icon(Icons.print),
                       label: const Text('Print Ledger'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6366F1),
+                        backgroundColor: printButtonColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.all(16),
                       ),
@@ -148,10 +157,10 @@ class LedgerDisplay extends StatelessWidget {
     }
   }
 
-  Widget _buildTableHeader() {
+  Widget _buildTableHeader(Color backgroundColor) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      color: Colors.grey.shade100,
+      color: backgroundColor,
       child: const Row(
         children: [
           Expanded(
@@ -213,7 +222,7 @@ class LedgerDisplay extends StatelessWidget {
     );
   }
 
-  Widget _buildEntryRow(LedgerEntry entry) {
+  Widget _buildEntryRow(LedgerEntry entry, Color debitColor, Color creditColor) {
     final isDebit = entry.debit.isNotEmpty;
     final isCredit = entry.credit.isNotEmpty;
     
@@ -257,7 +266,7 @@ class LedgerDisplay extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isDebit ? FontWeight.w600 : FontWeight.normal,
-                color: isDebit ? Colors.red.shade700 : Colors.grey,
+                color: isDebit ? debitColor : Colors.grey,
                 fontFamily: 'monospace',
               ),
               textAlign: TextAlign.right,
@@ -270,7 +279,7 @@ class LedgerDisplay extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isCredit ? FontWeight.w600 : FontWeight.normal,
-                color: isCredit ? Colors.green.shade700 : Colors.grey,
+                color: isCredit ? creditColor : Colors.grey,
                 fontFamily: 'monospace',
               ),
               textAlign: TextAlign.right,
@@ -281,7 +290,7 @@ class LedgerDisplay extends StatelessWidget {
     );
   }
 
-  Widget _buildTotalsRow() {
+  Widget _buildTotalsRow(Color debitColor, Color creditColor) {
     return Column(
       children: [
         // Total Debit
@@ -291,32 +300,32 @@ class LedgerDisplay extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.red.shade50.withOpacity(0.5),
-                Colors.red.shade100.withOpacity(0.3),
+                debitColor.withOpacity(0.1),
+                debitColor.withOpacity(0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Colors.red.shade300.withOpacity(0.5),
+              color: debitColor.withOpacity(0.3),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total Debit',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
-                  color: Color(0xFF991B1B),
+                  color: debitColor,
                 ),
               ),
               Text(
                 '₹ ${_formatAmount(result.totalDebit)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: Color(0xFF991B1B),
+                  color: debitColor,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -331,32 +340,32 @@ class LedgerDisplay extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.green.shade50.withOpacity(0.5),
-                Colors.green.shade100.withOpacity(0.3),
+                creditColor.withOpacity(0.1),
+                creditColor.withOpacity(0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Colors.green.shade300.withOpacity(0.5),
+              color: creditColor.withOpacity(0.3),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total Credit',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
-                  color: Color(0xFF065F46),
+                  color: creditColor,
                 ),
               ),
               Text(
                 '₹ ${_formatAmount(result.totalCredit)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: Color(0xFF065F46),
+                  color: creditColor,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -367,39 +376,39 @@ class LedgerDisplay extends StatelessWidget {
     );
   }
 
-  Widget _buildClosingBalance() {
+  Widget _buildClosingBalance(Color balanceColor) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF10B981).withOpacity(0.1),
-            const Color(0xFF059669).withOpacity(0.1),
+            balanceColor.withOpacity(0.15),
+            balanceColor.withOpacity(0.08),
           ],
         ),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFF10B981).withOpacity(0.3),
+          color: balanceColor.withOpacity(0.3),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'Balance',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: Color(0xFF065F46),
+              color: balanceColor,
             ),
           ),
           Text(
             '₹ ${_formatAmount(result.closingBalance)}',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: Color(0xFF065F46),
+              color: balanceColor,
               fontFamily: 'monospace',
             ),
           ),

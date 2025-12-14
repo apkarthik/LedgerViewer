@@ -11,14 +11,27 @@ A modern Flutter Android app to view customer ledger data from Google Sheets CSV
 - ☁️ **Google Drive Integration**: Fetch live ledger data on each search; refresh master data independently
 - 💾 **Persistent Settings**: App data persists until uninstall or manual reset
 - 🎨 **Modern UI**: Professional, colorful design with Material Design 3
+- 🌈 **Customizable Themes**: Choose from 5 beautiful themes (Light, Dark, Ocean Blue, Nature Green, Royal Purple) to personalize your experience
 
 ## App Screens
 
 The app contains 3 main screens accessible via bottom navigation:
 
-1. **Settings** - Configure the Google Sheets CSV URLs for Master sheet (customer list) and Ledger sheet (ledger data)
+1. **Settings** - Configure the Google Sheets CSV URLs for Master sheet (customer list) and Ledger sheet (ledger data). Also customize the app theme to your preference.
 2. **Customers** - View and search customer information from the Master sheet. Click on any customer to view their ledger
 3. **Ledger Search** - Search for customer ledgers directly by entering a customer number
+
+## Theme Customization
+
+The app supports 5 beautiful themes that can be changed from the Settings screen:
+
+- **Light** - Clean, bright interface perfect for daylight use
+- **Dark** - Easy on the eyes for low-light environments
+- **Ocean Blue** - Calming blue tones inspired by the ocean
+- **Nature Green** - Fresh, natural green theme
+- **Royal Purple** - Elegant purple theme for a premium feel
+
+Your theme preference is saved automatically and persists across app sessions.
 
 ## Setup
 
