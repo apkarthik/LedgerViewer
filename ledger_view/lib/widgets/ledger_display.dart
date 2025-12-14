@@ -18,7 +18,7 @@ class LedgerDisplay extends StatelessWidget {
     final headerGradient = ThemeService.getLedgerHeaderGradient(currentTheme);
     final debitColor = ThemeService.getLedgerDebitColor(currentTheme);
     final creditColor = ThemeService.getLedgerCreditColor(currentTheme);
-    final tableHeaderColor = ThemeService.getLedgerTableHeaderColor(currentTheme, Theme.of(context).brightness);
+    final tableHeaderColor = ThemeService.getLedgerTableHeaderColor(currentTheme);
     final printButtonColor = ThemeService.getLedgerPrintButtonColor(currentTheme);
 
     return Card(

@@ -112,7 +112,7 @@ class ThemeService {
   }
 
   /// Get table header background color for ledger based on theme
-  static Color getLedgerTableHeaderColor(AppTheme theme, Brightness brightness) {
+  static Color getLedgerTableHeaderColor(AppTheme theme) {
     switch (theme) {
       case AppTheme.light:
         return Colors.grey.shade100;
