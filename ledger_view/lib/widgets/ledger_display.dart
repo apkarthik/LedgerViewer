@@ -426,7 +426,16 @@ class LedgerDisplay extends StatelessWidget {
 
   String _getVchTypeFirstLetter(String vchType) {
     if (vchType.isEmpty) return '';
-    return vchType[0].toUpperCase();
+    
+    // Map voucher types according to legend: S-Sales, P-Purchase, C-Receipt, J-Journal, B-all others
+    final type = vchType.toLowerCase();
+    if (type.startsWith('sales')) return 'S';
+    if (type.startsWith('purchase')) return 'P';
+    if (type.startsWith('receipt')) return 'C';
+    if (type.startsWith('journal')) return 'J';
+    
+    // All other types return 'B'
+    return 'B';
   }
 
   String _formatDateForDisplay(String dateStr) {
