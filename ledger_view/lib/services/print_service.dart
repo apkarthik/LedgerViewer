@@ -3,6 +3,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import '../models/ledger_entry.dart';
+import '../utils/voucher_type_mapper.dart';
 
 class PrintService {
   // Thermal printer paper format (58mm width)
@@ -247,7 +248,7 @@ class PrintService {
                 pw.Container(
                   margin: const pw.EdgeInsets.only(top: 4),
                   child: pw.Text(
-                    'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
+                    'S - Sales, P - Purchase, C - Cash Receipt, B - Bank Receipt, J - Journal',
                     style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
                     textAlign: pw.TextAlign.left,
                   ),
@@ -284,7 +285,7 @@ class PrintService {
           pw.SizedBox(
             width: typeWidth,
             child: pw.Text(
-              _getVchTypeFirstLetter(entry.vchType),
+              VoucherTypeMapper.getVchTypeFirstLetter(entry.vchType, entry.particulars),
               style: narrowTextStyle,
               textAlign: pw.TextAlign.center,
             ),
@@ -316,20 +317,6 @@ class PrintService {
         ],
       ),
     );
-  }
-
-  static String _getVchTypeFirstLetter(String vchType) {
-    if (vchType.isEmpty) return '';
-    
-    // Map voucher types according to legend: S-Sales, P-Purchase, C-Receipt, J-Journal, B-all others
-    final type = vchType.toLowerCase();
-    if (type.startsWith('sales')) return 'S';
-    if (type.startsWith('purchase')) return 'P';
-    if (type.startsWith('receipt')) return 'C';
-    if (type.startsWith('journal')) return 'J';
-    
-    // All other types return 'B'
-    return 'B';
   }
 
   static String _formatDateShort(String dateStr) {
