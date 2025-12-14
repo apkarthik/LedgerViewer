@@ -559,74 +559,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 16),
                         Consumer<ThemeProvider>(
                           builder: (context, themeProvider, child) {
-                            return Column(
-                              children: AppTheme.values.map((theme) {
-                                final isSelected = themeProvider.currentTheme == theme;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: InkWell(
-                                    onTap: () {
-                                      themeProvider.setTheme(theme);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Theme changed to ${ThemeService.getThemeName(theme)}'),
-                                          backgroundColor: Theme.of(context).colorScheme.primary,
-                                          behavior: SnackBarBehavior.floating,
-                                          duration: const Duration(seconds: 1),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: isSelected 
-                                              ? Theme.of(context).colorScheme.primary
-                                              : Colors.grey.shade300,
-                                          width: isSelected ? 2 : 1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        color: isSelected
-                                            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                                            : null,
+                            return DropdownButtonFormField<AppTheme>(
+                              value: themeProvider.currentTheme,
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  ThemeService.getThemeIcon(themeProvider.currentTheme),
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              items: AppTheme.values.map((theme) {
+                                return DropdownMenuItem<AppTheme>(
+                                  value: theme,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        ThemeService.getThemeIcon(theme),
+                                        size: 20,
+                                        color: Colors.grey.shade600,
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            ThemeService.getThemeIcon(theme),
-                                            color: isSelected
-                                                ? Theme.of(context).colorScheme.primary
-                                                : Colors.grey.shade600,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              ThemeService.getThemeName(theme),
-                                              style: TextStyle(
-                                                fontWeight: isSelected 
-                                                    ? FontWeight.bold 
-                                                    : FontWeight.normal,
-                                                color: isSelected
-                                                    ? Theme.of(context).colorScheme.primary
-                                                    : null,
-                                              ),
-                                            ),
-                                          ),
-                                          if (isSelected)
-                                            Icon(
-                                              Icons.check_circle,
-                                              color: Theme.of(context).colorScheme.primary,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
+                                      const SizedBox(width: 12),
+                                      Text(ThemeService.getThemeName(theme)),
+                                    ],
                                   ),
                                 );
                               }).toList(),
+                              onChanged: (AppTheme? theme) {
+                                if (theme != null) {
+                                  themeProvider.setTheme(theme);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Theme changed to ${ThemeService.getThemeName(theme)}'),
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: const Duration(seconds: 1),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                             );
                           },
                         ),

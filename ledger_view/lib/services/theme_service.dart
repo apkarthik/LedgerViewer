@@ -63,6 +63,86 @@ class ThemeService {
     }
   }
 
+  /// Get primary gradient colors for ledger header based on theme
+  static List<Color> getLedgerHeaderGradient(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.light:
+        return [const Color(0xFF6366F1), const Color(0xFF8B5CF6)];
+      case AppTheme.dark:
+        return [const Color(0xFF1E293B), const Color(0xFF334155)];
+      case AppTheme.blue:
+        return [const Color(0xFF0EA5E9), const Color(0xFF0284C7)];
+      case AppTheme.green:
+        return [const Color(0xFF10B981), const Color(0xFF059669)];
+      case AppTheme.purple:
+        return [const Color(0xFF9333EA), const Color(0xFF7E22CE)];
+    }
+  }
+
+  /// Get debit color for ledger entries based on theme
+  static Color getLedgerDebitColor(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.light:
+        return const Color(0xFF991B1B); // Red
+      case AppTheme.dark:
+        return const Color(0xFFEF4444); // Lighter red for dark theme
+      case AppTheme.blue:
+        return const Color(0xFFDC2626); // Red
+      case AppTheme.green:
+        return const Color(0xFFDC2626); // Red
+      case AppTheme.purple:
+        return const Color(0xFFDC2626); // Red
+    }
+  }
+
+  /// Get credit color for ledger entries based on theme
+  static Color getLedgerCreditColor(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.light:
+        return const Color(0xFF065F46); // Green
+      case AppTheme.dark:
+        return const Color(0xFF10B981); // Lighter green for dark theme
+      case AppTheme.blue:
+        return const Color(0xFF047857); // Green
+      case AppTheme.green:
+        return const Color(0xFF047857); // Green
+      case AppTheme.purple:
+        return const Color(0xFF047857); // Green
+    }
+  }
+
+  /// Get table header background color for ledger based on theme
+  static Color getLedgerTableHeaderColor(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.light:
+        return Colors.grey.shade100;
+      case AppTheme.dark:
+        return const Color(0xFF334155);
+      case AppTheme.blue:
+        return Colors.blue.shade50;
+      case AppTheme.green:
+        return Colors.green.shade50;
+      case AppTheme.purple:
+        return Colors.purple.shade50;
+    }
+  }
+
+  /// Get print button color based on theme
+  static Color getLedgerPrintButtonColor(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.light:
+        return const Color(0xFF6366F1);
+      case AppTheme.dark:
+        return const Color(0xFF6366F1);
+      case AppTheme.blue:
+        return const Color(0xFF0EA5E9);
+      case AppTheme.green:
+        return const Color(0xFF10B981);
+      case AppTheme.purple:
+        return const Color(0xFF9333EA);
+    }
+  }
+
   static ThemeData _getLightTheme() {
     return ThemeData(
       useMaterial3: true,
