@@ -97,7 +97,7 @@ class LedgerDisplay extends StatelessWidget {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                       child: const Text(
-                        'S - Sales, P - Purchase, R - Receipt, C - Cash, B - Bank',
+                        'S - Sales, P - Purchase, C - Receipt, J - Journal, B - all others',
                         style: TextStyle(
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
