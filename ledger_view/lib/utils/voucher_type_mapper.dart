@@ -1,5 +1,8 @@
 /// Utility class for voucher type mapping
 class VoucherTypeMapper {
+  /// List of bank keywords used to identify bank receipts
+  static const List<String> _bankKeywords = ['bank', 'hdfc', 'icici', 'sbi', 'axis'];
+  
   /// Map voucher type and particulars to a single letter code
   /// 
   /// Returns:
@@ -40,7 +43,6 @@ class VoucherTypeMapper {
   
   /// Check if particulars indicate a bank receipt
   static bool _isBankReceipt(String particularsLower) {
-    const bankKeywords = ['bank', 'hdfc', 'icici', 'sbi', 'axis'];
-    return bankKeywords.any((keyword) => particularsLower.contains(keyword));
+    return _bankKeywords.any((keyword) => particularsLower.contains(keyword));
   }
 }
