@@ -126,7 +126,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   double _parseAmount(String amount) {
     if (amount.isEmpty) return 0.0;
     try {
-      return double.parse(amount.replaceAll(',', ''));
+      // Remove commas and trim whitespace
+      final cleaned = amount.replaceAll(',', '').trim();
+      return double.parse(cleaned);
     } catch (e) {
       return 0.0;
     }
@@ -271,7 +273,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                           ),
                           _buildSummaryItem(
                             'With Balances',
-                            _filteredBalances.where((b) => b.closingBalance.isNotEmpty).length.toString(),
+                            _filteredBalances.where((b) => _parseAmount(b.closingBalance) != 0.0).length.toString(),
                             Icons.account_balance_wallet,
                           ),
                         ],
