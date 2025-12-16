@@ -314,7 +314,7 @@ class CsvService {
         // Find the last credit entry date
         DateTime? lastCreditDate;
         for (final entry in ledgerResult.entries.reversed) {
-          if (entry.credit.isNotEmpty && entry.credit != '0' && entry.credit != '0.00') {
+          if (_isValidCreditAmount(entry.credit)) {
             try {
               // Try to parse the date
               lastCreditDate = _parseEntryDate(entry.date);
@@ -358,9 +358,8 @@ class CsvService {
             month = _parseMonthName(parts[1]);
             year = int.tryParse(parts[2]);
             
-            if (year != null && year < 100) {
-              // Convert 2-digit year to 4-digit
-              year = year + 2000;
+            if (year != null) {
+              year = _convertTwoDigitYear(year);
             }
           } else if (parts[0].length == 4) {
             // Format: yyyy-mm-dd
@@ -373,8 +372,8 @@ class CsvService {
             month = int.tryParse(parts[1]);
             year = int.tryParse(parts[2]);
             
-            if (year != null && year < 100) {
-              year = year + 2000;
+            if (year != null) {
+              year = _convertTwoDigitYear(year);
             }
           }
 
@@ -392,8 +391,8 @@ class CsvService {
           final month = int.tryParse(parts[1]);
           int? year = int.tryParse(parts[2]);
           
-          if (year != null && year < 100) {
-            year = year + 2000;
+          if (year != null) {
+            year = _convertTwoDigitYear(year);
           }
 
           if (day != null && month != null && year != null) {
@@ -426,5 +425,18 @@ class CsvService {
     };
     
     return months[monthName.toLowerCase()];
+  }
+
+  /// Check if a credit amount string is valid (non-empty and non-zero)
+  static bool _isValidCreditAmount(String credit) {
+    return credit.isNotEmpty && credit != '0' && credit != '0.00';
+  }
+
+  /// Convert 2-digit year to 4-digit year
+  /// Uses pivot year approach: 0-30 = 2000s, 31-99 = 1900s
+  static int _convertTwoDigitYear(int year) {
+    if (year >= 100) return year; // Already 4-digit
+    if (year <= 30) return 2000 + year;
+    return 1900 + year;
   }
 }

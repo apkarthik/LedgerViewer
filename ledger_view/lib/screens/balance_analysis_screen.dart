@@ -102,7 +102,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
       if (days != null && days > 0) {
         filtered = filtered.where((cb) {
           final daysSinceCredit = cb.daysSinceLastCredit;
-          // Include customers with no credit history OR those with credit history older than specified days
+          // Include customers with no credit history OR those with at least the specified days since last credit
           return daysSinceCredit == null || daysSinceCredit >= days;
         }).toList();
       }
