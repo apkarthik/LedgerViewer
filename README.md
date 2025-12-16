@@ -7,6 +7,7 @@ A modern Flutter Android app to view customer ledger data from Google Sheets CSV
 - 🔍 **Search by Customer Number**: Enter a customer number, name, or mobile number (e.g., "1139B", "Pushpa", "9876543210") to view their ledger
 - 👥 **Customer List**: Browse customer information from Master sheet with search and filter
 - 📊 **Professional Ledger Display**: Clean, formatted view in the app; simplified print output with Date, Vch Type (first letter), Vch No., Debit, and Credit columns
+- 📈 **Balance Analysis**: Analyze customer balances with advanced filters for outstanding amounts and payment tracking
 - 🖨️ **Print/PDF Support**: Generate printable ledger statements with simplified format matching accounting requirements
 - ☁️ **Google Drive Integration**: Fetch live ledger data on each search; refresh master data independently
 - 💾 **Persistent Settings**: App data persists until uninstall or manual reset
@@ -15,11 +16,15 @@ A modern Flutter Android app to view customer ledger data from Google Sheets CSV
 
 ## App Screens
 
-The app contains 3 main screens accessible via bottom navigation:
+The app contains 4 main screens accessible via bottom navigation:
 
 1. **Settings** - Configure the Google Sheets CSV URLs for Master sheet (customer list) and Ledger sheet (ledger data). Also customize the app theme to your preference.
-2. **Customers** - View and search customer information from the Master sheet. Click on any customer to view their ledger
-3. **Ledger Search** - Search for customer ledgers directly by entering a customer number
+2. **Ledger Search** - Search for customer ledgers directly by entering a customer number, name, or mobile number
+3. **Analysis** - Analyze customer balances with advanced filtering options:
+   - Filter by balance amount (greater than or less than a specified amount)
+   - Filter by days without credit (customers with no credit entries for N days from today)
+   - Combine both filters for precise analysis
+   - View customer details including balance and last credit date
 
 ## Theme Customization
 
