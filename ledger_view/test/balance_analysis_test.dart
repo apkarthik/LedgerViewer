@@ -474,5 +474,127 @@ void main() {
         expect(b.balance > 50000, isTrue);
       }
     });
+
+    test('analyzeCustomerBalances with many customers having similar prefixes', () {
+      // This test specifically addresses the issue mentioned:
+      // "Greater than is showing same values for many customers"
+      // We test that customers with similar IDs get unique balances
+      
+      final ledgerData = <List<dynamic>>[];
+      final customers = <Customer>[];
+      final expectedBalances = <String, double>{};
+      
+      // Create 20 customers with similar ID patterns but different balances
+      final testBalances = [
+        11000.0, 22000.0, 33000.0, 44000.0, 55000.0,
+        66000.0, 77000.0, 88000.0, 99000.0, 110000.0,
+        121000.0, 132000.0, 143000.0, 154000.0, 165000.0,
+        176000.0, 187000.0, 198000.0, 209000.0, 220000.0,
+      ];
+      
+      for (int i = 0; i < 20; i++) {
+        final customerId = 'CUST${1000 + i}';
+        final customerName = 'Customer ${1000 + i}';
+        final balance = testBalances[i];
+        
+        customers.add(Customer.fromRow(['$customerId.$customerName', '98000000${i % 10}']));
+        expectedBalances[customerId] = balance;
+        
+        ledgerData.addAll([
+          ['Ledger:', '$customerId.$customerName', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+          ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+          ['', 'By', 'Closing Balance', '', '', '', balance.toString()],
+          [balance.toString(), '', '', '', '', '', balance.toString()],
+          if (i < 19) ['', '', '', '', '', '', ''],
+        ]);
+      }
+      
+      final balances = CsvService.analyzeCustomerBalances(ledgerData, customers);
+      
+      // Verify all customers are analyzed
+      expect(balances.length, equals(20), reason: 'All 20 customers should be analyzed');
+      
+      // Verify each customer has the correct unique balance
+      for (int i = 0; i < 20; i++) {
+        final customerId = 'CUST${1000 + i}';
+        final customerBalance = balances.firstWhere(
+          (b) => b.customerId == customerId,
+          orElse: () => throw Exception('Customer $customerId not found in results'),
+        );
+        expect(customerBalance.balance, equals(expectedBalances[customerId]),
+          reason: 'Customer $customerId should have balance ${expectedBalances[customerId]}');
+      }
+      
+      // CRITICAL: Verify all balances are unique - this is the main issue from the problem statement
+      final uniqueBalances = balances.map((b) => b.balance).toSet();
+      expect(uniqueBalances.length, equals(20), 
+        reason: 'All 20 customers must have unique balances - if this fails, the "same values for many customers" issue exists');
+      
+      // Test greater than filter with various thresholds
+      final thresholds = [50000.0, 100000.0, 150000.0, 200000.0];
+      for (final threshold in thresholds) {
+        final filtered = balances.where((b) => b.balance > threshold).toList();
+        
+        // Verify all filtered results meet the criteria
+        for (final b in filtered) {
+          expect(b.balance, greaterThan(threshold),
+            reason: 'Customer ${b.customerId} with balance ${b.balance} should be > $threshold');
+        }
+        
+        // Verify no false positives - check that excluded customers don't meet criteria
+        final excluded = balances.where((b) => b.balance <= threshold).toList();
+        for (final b in excluded) {
+          expect(b.balance, lessThanOrEqualTo(threshold),
+            reason: 'Customer ${b.customerId} with balance ${b.balance} should be <= $threshold');
+        }
+      }
+    });
+
+    test('balance comparison edge cases with very close values', () {
+      // Test that the comparison works correctly even with very close floating point values
+      final ledgerData = [
+        ['Ledger:', 'E001.Edge Customer 1', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['', 'By', 'Closing Balance', '', '', '', '50000.00'],
+        ['50000.00', '', '', '', '', '', '50000.00'],
+        ['', '', '', '', '', '', ''],
+        
+        ['Ledger:', 'E002.Edge Customer 2', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['', 'By', 'Closing Balance', '', '', '', '50000.01'],
+        ['50000.01', '', '', '', '', '', '50000.01'],
+        ['', '', '', '', '', '', ''],
+        
+        ['Ledger:', 'E003.Edge Customer 3', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['', 'By', 'Closing Balance', '', '', '', '49999.99'],
+        ['49999.99', '', '', '', '', '', '49999.99'],
+      ];
+      
+      final customers = [
+        Customer.fromRow(['E001.Edge Customer 1', '1111111111']),
+        Customer.fromRow(['E002.Edge Customer 2', '2222222222']),
+        Customer.fromRow(['E003.Edge Customer 3', '3333333333']),
+      ];
+      
+      final balances = CsvService.analyzeCustomerBalances(ledgerData, customers);
+      
+      expect(balances.length, equals(3));
+      
+      // Test greater than 50000
+      final greaterThan50k = balances.where((b) => b.balance > 50000.0).toList();
+      expect(greaterThan50k.length, equals(1), reason: 'Only one customer has balance > 50000');
+      expect(greaterThan50k[0].customerId, equals('E002'));
+      
+      // Test less than 50000
+      final lessThan50k = balances.where((b) => b.balance < 50000.0).toList();
+      expect(lessThan50k.length, equals(1), reason: 'Only one customer has balance < 50000');
+      expect(lessThan50k[0].customerId, equals('E003'));
+      
+      // Test equal to 50000
+      final equalTo50k = balances.where((b) => b.balance == 50000.0).toList();
+      expect(equalTo50k.length, equals(1), reason: 'Only one customer has balance == 50000');
+      expect(equalTo50k[0].customerId, equals('E001'));
+    });
   });
 }
