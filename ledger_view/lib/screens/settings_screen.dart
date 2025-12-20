@@ -214,11 +214,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.help_outline, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('How to Use LedgerView'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '📋 Setup',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '1. Open your Google Sheet with customer and ledger data\n'
+                '2. Go to File → Share → Publish to web\n'
+                '3. Publish both Master and Ledger sheets as CSV\n'
+                '4. Copy the CSV URLs and paste them in Settings',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '🏠 Home Screen',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Search for customers by ID, name, or phone\n'
+                '• View detailed ledger statements\n'
+                '• Print or share ledgers as PDF/Image\n'
+                '• Filter ledger by date range',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '📊 Balance Analysis',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Filter customers by outstanding balance\n'
+                '• Find customers without credits for X days\n'
+                '• View total balances across all customers\n'
+                '• Export analysis as PDF or Image',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '🎨 Themes',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Choose from multiple color themes\n'
+                '• Customized for better readability',
+                style: TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it!'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Help',
+            onPressed: _showHelpDialog,
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

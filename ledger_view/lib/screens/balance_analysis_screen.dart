@@ -27,6 +27,9 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
   String _balanceComparison = 'greater'; // 'greater' or 'less'
   bool _useBalanceFilter = false;
   bool _useDaysFilter = false;
+  
+  // Collapsible filter state
+  bool _isFilterExpanded = true;
 
   @override
   void initState() {
@@ -62,6 +65,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
       setState(() {
         _allBalances = balances;
         _isLoading = false;
+        _isFilterExpanded = false; // Collapse filters when showing results
       });
 
       // Apply filters
@@ -215,143 +219,158 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
               children: [
                 // Filter Card
                 Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      title: Text(
+                        'Filter Options',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      leading: Icon(
+                        _isFilterExpanded ? Icons.filter_alt : Icons.filter_alt_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      initiallyExpanded: _isFilterExpanded,
+                      onExpansionChanged: (expanded) {
+                        setState(() {
+                          _isFilterExpanded = expanded;
+                        });
+                      },
                       children: [
-                        Text(
-                          'Filter Options',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Balance Filter
-                        CheckboxListTile(
-                          value: _useBalanceFilter,
-                          onChanged: (value) {
-                            setState(() {
-                              _useBalanceFilter = value ?? false;
-                            });
-                          },
-                          title: const Text('Filter by Balance Amount'),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        if (_useBalanceFilter) ...[
-                          const SizedBox(height: 8),
-                          Row(
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                flex: 2,
-                                child: DropdownButtonFormField<String>(
-                                  value: _balanceComparison,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Comparison',
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  ),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: 'greater',
-                                      child: Text('Greater than'),
+                              // Balance Filter
+                              CheckboxListTile(
+                                value: _useBalanceFilter,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _useBalanceFilter = value ?? false;
+                                  });
+                                },
+                                title: const Text('Filter by Balance Amount'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              if (_useBalanceFilter) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: DropdownButtonFormField<String>(
+                                        value: _balanceComparison,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Comparison',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        ),
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 'greater',
+                                            child: Text('Greater than'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'less',
+                                            child: Text('Less than'),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _balanceComparison = value ?? 'greater';
+                                          });
+                                        },
+                                      ),
                                     ),
-                                    DropdownMenuItem(
-                                      value: 'less',
-                                      child: Text('Less than'),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 1,
+                                      child: TextField(
+                                        controller: _balanceController,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Amount',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                      ),
                                     ),
                                   ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _balanceComparison = value ?? 'greater';
-                                    });
-                                  },
                                 ),
+                              ],
+
+                              const SizedBox(height: 16),
+
+                              // Days Filter
+                              CheckboxListTile(
+                                value: _useDaysFilter,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _useDaysFilter = value ?? false;
+                                  });
+                                },
+                                title: const Text('Filter by Days without Credit'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 1,
-                                child: TextField(
-                                  controller: _balanceController,
+                              if (_useDaysFilter) ...[
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _daysController,
                                   decoration: const InputDecoration(
-                                    labelText: 'Amount',
+                                    labelText: 'Number of days (from today)',
                                     border: OutlineInputBorder(),
                                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    helperText: 'Shows customers with no credit entry for this many days',
                                   ),
                                   keyboardType: TextInputType.number,
                                 ),
+                              ],
+
+                              const SizedBox(height: 16),
+
+                              // Analyze Button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _isLoading ? null : () {
+                                    if (!_useBalanceFilter && !_useDaysFilter) {
+                                      _showError('Please select at least one filter option');
+                                      return;
+                                    }
+                                    if (_useBalanceFilter && _balanceController.text.isEmpty) {
+                                      _showError('Please enter balance amount');
+                                      return;
+                                    }
+                                    if (_useDaysFilter && _daysController.text.isEmpty) {
+                                      _showError('Please enter number of days');
+                                      return;
+                                    }
+                                    _analyzeBalances();
+                                  },
+                                  icon: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Icon(Icons.analytics),
+                                  label: Text(_isLoading ? 'Analyzing...' : 'Analyze'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-
-                        // Days Filter
-                        CheckboxListTile(
-                          value: _useDaysFilter,
-                          onChanged: (value) {
-                            setState(() {
-                              _useDaysFilter = value ?? false;
-                            });
-                          },
-                          title: const Text('Filter by Days without Credit'),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        if (_useDaysFilter) ...[
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _daysController,
-                            decoration: const InputDecoration(
-                              labelText: 'Number of days (from today)',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              helperText: 'Shows customers with no credit entry for this many days',
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-
-                        // Analyze Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _isLoading ? null : () {
-                              if (!_useBalanceFilter && !_useDaysFilter) {
-                                _showError('Please select at least one filter option');
-                                return;
-                              }
-                              if (_useBalanceFilter && _balanceController.text.isEmpty) {
-                                _showError('Please enter balance amount');
-                                return;
-                              }
-                              if (_useDaysFilter && _daysController.text.isEmpty) {
-                                _showError('Please enter number of days');
-                                return;
-                              }
-                              _analyzeBalances();
-                            },
-                            icon: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Icon(Icons.analytics),
-                            label: Text(_isLoading ? 'Analyzing...' : 'Analyze'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
                           ),
                         ),
                       ],

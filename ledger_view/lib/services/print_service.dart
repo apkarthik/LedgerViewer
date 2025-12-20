@@ -763,14 +763,14 @@ class PrintService {
     // Convert PDF to image using printing package
     final image = await Printing.raster(pdfBytes);
     final pdfRaster = await image.first;
-    final imageBytes = await pdfRaster.toPng();
+    final imageBytes = await pdfRaster.toImage();
     
     // Add timestamp to filename to ensure uniqueness
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final filenameWithTimestamp = '${filenameBase}_$timestamp';
     
     final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/$filenameWithTimestamp.png');
+    final file = File('${tempDir.path}/$filenameWithTimestamp.jpg');
     await file.writeAsBytes(imageBytes);
     
     await Share.shareXFiles(
