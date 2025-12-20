@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
+import 'balance_analysis_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -33,6 +34,7 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
       ),
+      const BalanceAnalysisScreen(),
     ];
   }
 
@@ -61,6 +63,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
             label: 'Ledger',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Analysis',
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:excel/excel.dart';
 import 'dart:io';
 import '../models/ledger_entry.dart';
 import '../models/customer.dart';
+import '../models/customer_balance.dart';
 
 class CsvService {
   /// Fetch and parse data from an Excel file (.xlsx) and select a sheet
@@ -284,5 +285,158 @@ class CsvService {
       return months[month];
     }
     return month.toString();
+  }
+
+  /// Analyze customer balances from ledger data
+  /// Returns a list of CustomerBalance objects with balance and last credit date
+  static List<CustomerBalance> analyzeCustomerBalances(
+    List<List<dynamic>> ledgerData,
+    List<Customer> customers,
+  ) {
+    if (ledgerData.isEmpty || customers.isEmpty) return [];
+
+    final balances = <CustomerBalance>[];
+
+    for (final customer in customers) {
+      // Find the ledger for this customer
+      final ledgerResult = findLedgerByNumber(ledgerData, customer.customerId);
+      
+      if (ledgerResult != null) {
+        // Parse closing balance
+        double balance = 0.0;
+        try {
+          final balanceStr = ledgerResult.closingBalance.replaceAll(',', '');
+          balance = double.tryParse(balanceStr) ?? 0.0;
+        } catch (e) {
+          // If parsing fails, balance remains 0
+        }
+
+        // Find the last credit entry date
+        DateTime? lastCreditDate;
+        for (final entry in ledgerResult.entries.reversed) {
+          if (_isValidCreditAmount(entry.credit)) {
+            try {
+              // Try to parse the date
+              lastCreditDate = _parseEntryDate(entry.date);
+              if (lastCreditDate != null) break;
+            } catch (e) {
+              // Continue to next entry if parsing fails
+            }
+          }
+        }
+
+        balances.add(CustomerBalance(
+          customerId: customer.customerId,
+          name: customer.name,
+          mobileNumber: customer.mobileNumber,
+          balance: balance,
+          lastCreditDate: lastCreditDate,
+        ));
+      }
+    }
+
+    return balances;
+  }
+
+  /// Parse a date string from ledger entry
+  /// Supports various formats: "24-Apr-25", "2025-04-24", "24/04/2025"
+  static DateTime? _parseEntryDate(String dateStr) {
+    if (dateStr.isEmpty) return null;
+
+    try {
+      // Handle format "24-Apr-25" or similar
+      if (dateStr.contains('-')) {
+        final parts = dateStr.split('-');
+        if (parts.length == 3) {
+          int? day, year;
+          int? month;
+
+          // Check if it's in format "24-Apr-25" (day-month-year)
+          if (parts[1].length == 3 && !RegExp(r'^\d+$').hasMatch(parts[1])) {
+            // Month name format
+            day = int.tryParse(parts[0]);
+            month = _parseMonthName(parts[1]);
+            year = int.tryParse(parts[2]);
+            
+            if (year != null) {
+              year = _convertTwoDigitYear(year);
+            }
+          } else if (parts[0].length == 4) {
+            // Format: yyyy-mm-dd
+            year = int.tryParse(parts[0]);
+            month = int.tryParse(parts[1]);
+            day = int.tryParse(parts[2]);
+          } else {
+            // Format: dd-mm-yyyy
+            day = int.tryParse(parts[0]);
+            month = int.tryParse(parts[1]);
+            year = int.tryParse(parts[2]);
+            
+            if (year != null) {
+              year = _convertTwoDigitYear(year);
+            }
+          }
+
+          if (day != null && month != null && year != null) {
+            return DateTime(year, month, day);
+          }
+        }
+      }
+      
+      // Handle format "24/04/2025" or "24/04/25"
+      if (dateStr.contains('/')) {
+        final parts = dateStr.split('/');
+        if (parts.length == 3) {
+          final day = int.tryParse(parts[0]);
+          final month = int.tryParse(parts[1]);
+          int? year = int.tryParse(parts[2]);
+          
+          if (year != null) {
+            year = _convertTwoDigitYear(year);
+          }
+
+          if (day != null && month != null && year != null) {
+            return DateTime(year, month, day);
+          }
+        }
+      }
+    } catch (e) {
+      // Return null if parsing fails
+    }
+
+    return null;
+  }
+
+  /// Parse month name to month number
+  static int? _parseMonthName(String monthName) {
+    const months = {
+      'jan': 1, 'january': 1,
+      'feb': 2, 'february': 2,
+      'mar': 3, 'march': 3,
+      'apr': 4, 'april': 4,
+      'may': 5,
+      'jun': 6, 'june': 6,
+      'jul': 7, 'july': 7,
+      'aug': 8, 'august': 8,
+      'sep': 9, 'september': 9,
+      'oct': 10, 'october': 10,
+      'nov': 11, 'november': 11,
+      'dec': 12, 'december': 12,
+    };
+    
+    return months[monthName.toLowerCase()];
+  }
+
+  /// Check if a credit amount string is valid (non-empty and non-zero)
+  static bool _isValidCreditAmount(String credit) {
+    return credit.isNotEmpty && credit != '0' && credit != '0.00';
+  }
+
+  /// Convert 2-digit year to 4-digit year
+  /// Uses pivot year approach: 0-30 = 2000s, 31-99 = 1900s
+  static int _convertTwoDigitYear(int year) {
+    if (year >= 100) return year; // Already 4-digit
+    if (year <= 30) return 2000 + year;
+    return 1900 + year;
   }
 }
