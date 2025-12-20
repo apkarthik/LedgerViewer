@@ -775,8 +775,8 @@ class PrintService {
       numChannels: 4, // RGBA format
     );
     
-    // Encode as JPEG
-    final imageBytes = Uint8List.fromList(img.encodeJpg(imgImage));
+    // Encode as JPEG (returns Uint8List directly)
+    final imageBytes = img.encodeJpg(imgImage);
     
     // Add timestamp to filename to ensure uniqueness
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
