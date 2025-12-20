@@ -9,6 +9,7 @@ A modern Flutter Android app to view customer ledger data from Google Sheets CSV
 - 📊 **Professional Ledger Display**: Clean, formatted view in the app; simplified print output with Date, Vch Type (first letter), Vch No., Debit, and Credit columns
 - 📈 **Balance Analysis**: Analyze customer balances with advanced filters for outstanding amounts and payment tracking
 - 🖨️ **Print/PDF Support**: Generate printable ledger statements with simplified format matching accounting requirements
+- 📤 **Share Functionality**: Share ledger statements and customer details as PDFs directly to WhatsApp, Email, and other apps
 - ☁️ **Google Drive Integration**: Fetch live ledger data on each search; refresh master data independently
 - 💾 **Persistent Settings**: App data persists until uninstall or manual reset
 - 🎨 **Modern UI**: Professional, colorful design with Material Design 3
