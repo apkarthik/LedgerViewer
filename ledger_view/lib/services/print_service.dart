@@ -2,8 +2,13 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'dart:typed_data';
 import '../models/ledger_entry.dart';
 import '../models/customer.dart';
+import '../models/customer_balance.dart';
 import '../utils/voucher_type_mapper.dart';
 
 class PrintService {
@@ -24,241 +29,7 @@ class PrintService {
   static const double creditWidth = 42.0;
 
   static Future<void> printLedger(LedgerResult result) async {
-    final pdf = pw.Document();
-
-    // Text style for narrow font (using condensed spacing)
-    final narrowTextStyle = pw.TextStyle(
-      fontSize: 8,
-      letterSpacing: -0.3, // Negative letter spacing for condensed effect
-    );
-    final narrowBoldTextStyle = pw.TextStyle(
-      fontSize: 8,
-      fontWeight: pw.FontWeight.bold,
-      letterSpacing: -0.3,
-    );
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: thermalPageFormat,
-        build: (context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Header
-              pw.Center(
-                child: pw.Text(
-                  'LEDGER STATEMENT',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-              pw.SizedBox(height: 3),
-              pw.Center(
-                child: pw.Text(
-                  DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
-                  style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
-                ),
-              ),
-              pw.SizedBox(height: 6),
-              pw.Divider(thickness: 1),
-              pw.SizedBox(height: 3),
-
-              // Customer Info
-              pw.Text(
-                'Customer:',
-                style: pw.TextStyle(
-                  fontSize: 8,
-                  fontWeight: pw.FontWeight.bold,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              pw.Text(
-                result.customerName,
-                style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
-              ),
-              pw.SizedBox(height: 1),
-              pw.Text(
-                'Period: ${result.dateRange}',
-                style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
-              ),
-              pw.SizedBox(height: 6),
-
-              // Table Header
-              pw.Container(
-                decoration: const pw.BoxDecoration(
-                  border: pw.Border(
-                    bottom: pw.BorderSide(width: 1),
-                  ),
-                ),
-                padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                child: pw.Row(
-                  children: [
-                    pw.SizedBox(
-                      width: dateWidth,
-                      child: pw.Text(
-                        'Date',
-                        style: narrowBoldTextStyle,
-                      ),
-                    ),
-                    pw.SizedBox(
-                      width: typeWidth,
-                      child: pw.Text(
-                        'Tp',
-                        style: narrowBoldTextStyle,
-                        textAlign: pw.TextAlign.center,
-                      ),
-                    ),
-                    pw.SizedBox(
-                      width: noWidth,
-                      child: pw.Text(
-                        'No',
-                        style: narrowBoldTextStyle,
-                        textAlign: pw.TextAlign.center,
-                      ),
-                    ),
-                    pw.SizedBox(
-                      width: debitWidth,
-                      child: pw.Text(
-                        'Debit',
-                        style: narrowBoldTextStyle,
-                        textAlign: pw.TextAlign.right,
-                      ),
-                    ),
-                    pw.SizedBox(
-                      width: creditWidth,
-                      child: pw.Text(
-                        'Credit',
-                        style: narrowBoldTextStyle,
-                        textAlign: pw.TextAlign.right,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Table Rows
-              ...result.entries.map((entry) => _buildEntryRow(entry)),
-
-              // Divider
-              pw.Container(
-                decoration: const pw.BoxDecoration(
-                  border: pw.Border(
-                    top: pw.BorderSide(width: 1),
-                  ),
-                ),
-                margin: const pw.EdgeInsets.only(top: 4),
-              ),
-
-              // Total Debit
-              pw.Container(
-                padding: const pw.EdgeInsets.all(4),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(width: 1),
-                ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text(
-                      'Total Debit',
-                      style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 8,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    pw.Text(
-                      'Rs. ${_formatAmount(result.totalDebit)}',
-                      style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 8,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              pw.SizedBox(height: 3),
-
-              // Total Credit
-              pw.Container(
-                padding: const pw.EdgeInsets.all(4),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(width: 1),
-                ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text(
-                      'Total Credit',
-                      style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 8,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    pw.Text(
-                      'Rs. ${_formatAmount(result.totalCredit)}',
-                      style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 8,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              pw.SizedBox(height: 6),
-
-              // Balance
-              if (result.closingBalance.isNotEmpty)
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(4),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(width: 1),
-                  ),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'Balance',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      pw.Text(
-                        'Rs. ${_formatAmount(result.closingBalance)}',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 9,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Legend
-              if (result.closingBalance.isNotEmpty)
-                pw.Container(
-                  margin: const pw.EdgeInsets.only(top: 4),
-                  child: pw.Text(
-                    'S - Sales, P - Purchase, C - Cash Receipt, B - Bank Receipt, J - Journal',
-                    style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
-                    textAlign: pw.TextAlign.left,
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
+    final pdf = await _generateLedgerPdf(result);
 
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
@@ -506,5 +277,497 @@ class PrintService {
     }
 
     return amount;
+  }
+
+  /// Share ledger as PDF or image
+  static Future<void> shareLedger(LedgerResult result, {bool asImage = false}) async {
+    try {
+      final pdf = await _generateLedgerPdf(result);
+      final pdfBytes = await pdf.save();
+      
+      // Create meaningful filename
+      final customerIdClean = result.customerName.split('.')[0].replaceAll(RegExp(r'[^\w\s-]'), '');
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      
+      if (asImage) {
+        // Convert PDF to image
+        await _sharePdfAsImage(pdfBytes, 'Ledger_${customerIdClean}_$timestamp');
+      } else {
+        // Share as PDF
+        await _sharePdfFile(pdfBytes, 'Ledger_${customerIdClean}_$timestamp.pdf');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Share customer balance analysis as PDF or image
+  static Future<void> shareBalanceAnalysis(
+    List<CustomerBalance> balances,
+    {bool asImage = false}
+  ) async {
+    try {
+      final pdf = await _generateBalanceAnalysisPdf(balances);
+      final pdfBytes = await pdf.save();
+      
+      // Create meaningful filename
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      
+      if (asImage) {
+        // Convert PDF to image
+        await _sharePdfAsImage(pdfBytes, 'Balance_Analysis_$timestamp');
+      } else {
+        // Share as PDF
+        await _sharePdfFile(pdfBytes, 'Balance_Analysis_$timestamp.pdf');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Print balance analysis
+  static Future<void> printBalanceAnalysis(List<CustomerBalance> balances) async {
+    final pdf = await _generateBalanceAnalysisPdf(balances);
+    
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+    );
+  }
+
+  /// Generate ledger PDF document
+  static Future<pw.Document> _generateLedgerPdf(LedgerResult result) async {
+    final pdf = pw.Document();
+
+    // Text style for narrow font (using condensed spacing)
+    final narrowTextStyle = pw.TextStyle(
+      fontSize: 8,
+      letterSpacing: -0.3,
+    );
+    final narrowBoldTextStyle = pw.TextStyle(
+      fontSize: 8,
+      fontWeight: pw.FontWeight.bold,
+      letterSpacing: -0.3,
+    );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: thermalPageFormat,
+        build: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Center(
+                child: pw.Text(
+                  'LEDGER STATEMENT',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 3),
+              pw.Center(
+                child: pw.Text(
+                  DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+                  style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Divider(thickness: 1),
+              pw.SizedBox(height: 3),
+
+              // Customer Info
+              pw.Text(
+                'Customer:',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              pw.Text(
+                result.customerName,
+                style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
+              ),
+              pw.SizedBox(height: 1),
+              pw.Text(
+                'Period: ${result.dateRange}',
+                style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
+              ),
+              pw.SizedBox(height: 6),
+
+              // Table Header
+              pw.Container(
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                    bottom: pw.BorderSide(width: 1),
+                  ),
+                ),
+                padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                child: pw.Row(
+                  children: [
+                    pw.SizedBox(
+                      width: dateWidth,
+                      child: pw.Text(
+                        'Date',
+                        style: narrowBoldTextStyle,
+                      ),
+                    ),
+                    pw.SizedBox(
+                      width: typeWidth,
+                      child: pw.Text(
+                        'Tp',
+                        style: narrowBoldTextStyle,
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.SizedBox(
+                      width: noWidth,
+                      child: pw.Text(
+                        'No',
+                        style: narrowBoldTextStyle,
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.SizedBox(
+                      width: debitWidth,
+                      child: pw.Text(
+                        'Debit',
+                        style: narrowBoldTextStyle,
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                    pw.SizedBox(
+                      width: creditWidth,
+                      child: pw.Text(
+                        'Credit',
+                        style: narrowBoldTextStyle,
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Table Rows
+              ...result.entries.map((entry) => _buildEntryRow(entry)),
+
+              // Divider
+              pw.Container(
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                    top: pw.BorderSide(width: 1),
+                  ),
+                ),
+                margin: const pw.EdgeInsets.only(top: 4),
+              ),
+
+              // Total Debit
+              pw.Container(
+                padding: const pw.EdgeInsets.all(4),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(width: 1),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'Total Debit',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    pw.Text(
+                      'Rs. ${_formatAmount(result.totalDebit)}',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 3),
+
+              // Total Credit
+              pw.Container(
+                padding: const pw.EdgeInsets.all(4),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(width: 1),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'Total Credit',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    pw.Text(
+                      'Rs. ${_formatAmount(result.totalCredit)}',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 8,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 6),
+
+              // Balance
+              if (result.closingBalance.isNotEmpty)
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(4),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(width: 1),
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        'Balance',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 9,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      pw.Text(
+                        'Rs. ${_formatAmount(result.closingBalance)}',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 9,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Legend
+              if (result.closingBalance.isNotEmpty)
+                pw.Container(
+                  margin: const pw.EdgeInsets.only(top: 4),
+                  child: pw.Text(
+                    'S - Sales, P - Purchase, C - Cash Receipt, B - Bank Receipt, J - Journal',
+                    style: const pw.TextStyle(fontSize: 7, letterSpacing: -0.2),
+                    textAlign: pw.TextAlign.left,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf;
+  }
+
+  /// Generate balance analysis PDF document
+  static Future<pw.Document> _generateBalanceAnalysisPdf(List<CustomerBalance> balances) async {
+    final pdf = pw.Document();
+    final currencyFormat = NumberFormat.currency(symbol: 'Rs. ', decimalDigits: 2);
+    final dateFormat = DateFormat('dd-MMM-yyyy');
+
+    final narrowTextStyle = pw.TextStyle(
+      fontSize: 7,
+      letterSpacing: -0.3,
+    );
+    final narrowBoldTextStyle = pw.TextStyle(
+      fontSize: 7,
+      fontWeight: pw.FontWeight.bold,
+      letterSpacing: -0.3,
+    );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: thermalPageFormat,
+        build: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Center(
+                child: pw.Text(
+                  'BALANCE ANALYSIS',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 3),
+              pw.Center(
+                child: pw.Text(
+                  DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+                  style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Divider(thickness: 1),
+              pw.SizedBox(height: 3),
+
+              // Info
+              pw.Text(
+                'Total Customers: ${balances.length}',
+                style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
+              ),
+              pw.SizedBox(height: 6),
+
+              // Table Header
+              pw.Container(
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                    bottom: pw.BorderSide(width: 1),
+                  ),
+                ),
+                padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(
+                      flex: 3,
+                      child: pw.Text('Customer', style: narrowBoldTextStyle),
+                    ),
+                    pw.Expanded(
+                      flex: 2,
+                      child: pw.Text(
+                        'Balance',
+                        style: narrowBoldTextStyle,
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Table Rows
+              ...balances.map((balance) => pw.Container(
+                padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border(
+                    bottom: pw.BorderSide(
+                      color: PdfColors.grey300,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Expanded(
+                      flex: 3,
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            balance.customerId,
+                            style: narrowBoldTextStyle,
+                          ),
+                          pw.Text(
+                            balance.name,
+                            style: narrowTextStyle,
+                          ),
+                          if (balance.lastCreditDate != null)
+                            pw.Text(
+                              'Last: ${dateFormat.format(balance.lastCreditDate!)}',
+                              style: pw.TextStyle(
+                                fontSize: 6,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    pw.Expanded(
+                      flex: 2,
+                      child: pw.Text(
+                        currencyFormat.format(balance.balance),
+                        style: narrowBoldTextStyle,
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+
+              // Summary
+              pw.Container(
+                margin: const pw.EdgeInsets.only(top: 6),
+                padding: const pw.EdgeInsets.all(4),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(width: 1),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'Total Balance',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    pw.Text(
+                      currencyFormat.format(
+                        balances.fold(0.0, (sum, b) => sum + b.balance),
+                      ),
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf;
+  }
+
+  /// Share PDF file
+  static Future<void> _sharePdfFile(Uint8List pdfBytes, String filename) async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$filename');
+    await file.writeAsBytes(pdfBytes);
+    
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      subject: filename.replaceAll('.pdf', ''),
+    );
+  }
+
+  /// Share PDF as image
+  static Future<void> _sharePdfAsImage(Uint8List pdfBytes, String filenameBase) async {
+    // Convert PDF to image using printing package
+    final image = await Printing.raster(pdfBytes);
+    final imageBytes = await image.first.toPng();
+    
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$filenameBase.png');
+    await file.writeAsBytes(imageBytes);
+    
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      subject: filenameBase,
+    );
   }
 }
