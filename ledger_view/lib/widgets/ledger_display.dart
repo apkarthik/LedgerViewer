@@ -149,21 +149,6 @@ class LedgerDisplay extends StatelessWidget {
                     ),
                   
                   const SizedBox(height: 16),
-                  
-                  // Print Button at bottom
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _printLedger(context),
-                      icon: const Icon(Icons.print),
-                      label: const Text('Print Ledger'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: printButtonColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(16),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
