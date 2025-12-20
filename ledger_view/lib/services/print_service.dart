@@ -771,7 +771,7 @@ class PrintService {
     final imgImage = img.Image.fromBytes(
       width: pdfRaster.width,
       height: pdfRaster.height,
-      bytes: pdfRaster.pixels,
+      bytes: pdfRaster.pixels.buffer,
       numChannels: 4, // RGBA format
     );
     
