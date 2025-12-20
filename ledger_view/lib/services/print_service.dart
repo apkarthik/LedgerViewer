@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:image/image.dart' as img;
 import '../models/ledger_entry.dart';
 import '../models/customer.dart';
 import '../models/customer_balance.dart';
@@ -764,7 +765,18 @@ class PrintService {
     // Using JPEG format to ensure white background (no transparency issues)
     final image = await Printing.raster(pdfBytes, dpi: 300);
     final pdfRaster = await image.first;
-    final imageBytes = await pdfRaster.toJpeg();
+    
+    // Convert PdfRaster to JPEG using the image package
+    // PdfRaster.pixels returns raw RGBA pixel data
+    final imgImage = img.Image.fromBytes(
+      width: pdfRaster.width,
+      height: pdfRaster.height,
+      bytes: pdfRaster.pixels.buffer,
+      numChannels: 4, // RGBA format
+    );
+    
+    // Encode as JPEG
+    final imageBytes = Uint8List.fromList(img.encodeJpg(imgImage));
     
     // Add timestamp to filename to ensure uniqueness
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
