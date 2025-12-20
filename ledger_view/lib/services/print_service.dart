@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:cross_file/cross_file.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import '../models/ledger_entry.dart';
@@ -286,7 +287,11 @@ class PrintService {
       final pdfBytes = await pdf.save();
       
       // Create meaningful filename
-      final customerIdClean = result.customerName.split('.')[0].replaceAll(RegExp(r'[^\w\s-]'), '');
+      final customerParts = result.customerName.split('.');
+      final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
+          ? customerParts[0] 
+          : result.customerName)
+          .replaceAll(RegExp(r'[^\w\s-]'), '');
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       
       if (asImage) {
