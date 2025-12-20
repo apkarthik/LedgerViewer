@@ -323,7 +323,7 @@ class CsvService {
   /// Extracts customer information directly from ledger data (no master sheet required)
   static List<CustomerBalance> analyzeCustomerBalances(
     List<List<dynamic>> ledgerData,
-    [List<Customer>? customers],
+    [List<Customer>? customers]
   ) {
     if (ledgerData.isEmpty) return [];
 
