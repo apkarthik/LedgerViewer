@@ -102,9 +102,9 @@ void main() {
   group('CsvService - Customer Parsing', () {
     test('parseCustomerData parses customer data correctly', () {
       final testData = [
-        ['NAME', 'Mobile No', 'Area'],  // Header row
-        ['133.Arumugam', '12345466', 'NSK'],
-        ['254.Murugesan ', '98745621', 'Thiruverkadu'],
+        ['NAME', 'Mobile No', 'Area', 'GPAY'],  // Header row
+        ['133.Arumugam', '12345466', 'NSK', '9876543210'],
+        ['254.Murugesan ', '98745621', 'Thiruverkadu', '8765432109'],
       ];
 
       final customers = CsvService.parseCustomerData(testData);
@@ -113,9 +113,13 @@ void main() {
       expect(customers[0].customerId, equals('133'));
       expect(customers[0].name, equals('Arumugam'));
       expect(customers[0].mobileNumber, equals('12345466'));
+      expect(customers[0].area, equals('NSK'));
+      expect(customers[0].gpay, equals('9876543210'));
       expect(customers[1].customerId, equals('254'));
       expect(customers[1].name, equals('Murugesan'));
       expect(customers[1].mobileNumber, equals('98745621'));
+      expect(customers[1].area, equals('Thiruverkadu'));
+      expect(customers[1].gpay, equals('8765432109'));
     });
 
     test('parseCustomerData skips empty rows', () {
@@ -140,11 +144,13 @@ void main() {
 
   group('Customer', () {
     test('fromRow parses customer ID and name correctly', () {
-      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      final customer = Customer.fromRow(['133.Arumugam', '12345466', 'NSK', '9876543210']);
       
       expect(customer.customerId, equals('133'));
       expect(customer.name, equals('Arumugam'));
       expect(customer.mobileNumber, equals('12345466'));
+      expect(customer.area, equals('NSK'));
+      expect(customer.gpay, equals('9876543210'));
     });
 
     test('fromRow handles names without dots', () {
@@ -155,14 +161,14 @@ void main() {
     });
 
     test('matchesSearch finds by customer ID', () {
-      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      final customer = Customer.fromRow(['133.Arumugam', '12345466', 'NSK', '9876543210']);
       
       expect(customer.matchesSearch('133'), isTrue);
       expect(customer.matchesSearch('999'), isFalse);
     });
 
     test('matchesSearch finds by name (case insensitive)', () {
-      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      final customer = Customer.fromRow(['133.Arumugam', '12345466', 'NSK', '9876543210']);
       
       expect(customer.matchesSearch('Arumugam'), isTrue);
       expect(customer.matchesSearch('arumu'), isTrue);
@@ -170,10 +176,19 @@ void main() {
     });
 
     test('matchesSearch finds by mobile number', () {
-      final customer = Customer.fromRow(['133.Arumugam', '12345466']);
+      final customer = Customer.fromRow(['133.Arumugam', '12345466', 'NSK', '9876543210']);
       
       expect(customer.matchesSearch('12345'), isTrue);
       expect(customer.matchesSearch('99999'), isFalse);
+    });
+
+    test('matchesSearch finds by area (case insensitive)', () {
+      final customer = Customer.fromRow(['133.Arumugam', '12345466', 'NSK', '9876543210']);
+      
+      expect(customer.matchesSearch('NSK'), isTrue);
+      expect(customer.matchesSearch('nsk'), isTrue);
+      expect(customer.matchesSearch('NS'), isTrue);
+      expect(customer.matchesSearch('XYZ'), isFalse);
     });
   });
 
