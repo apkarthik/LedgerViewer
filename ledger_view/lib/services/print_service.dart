@@ -29,6 +29,7 @@ class PrintService {
   static const double noWidth = 20.0;
   static const double debitWidth = 42.0;
   static const double creditWidth = 42.0;
+  static const int _rgbChannelCount = 3;
 
   static Future<void> printLedger(LedgerResult result) async {
     final pdf = await _generateLedgerPdf(result);
@@ -777,10 +778,22 @@ class PrintService {
     final whiteBackground = img.Image(
       width: imgImage.width,
       height: imgImage.height,
+      format: img.Format.uint8,
+      numChannels: _rgbChannelCount,
     );
 
-    img.fill(whiteBackground, color: img.ColorUint8.rgb(255, 255, 255));
-    img.compositeImage(whiteBackground, imgImage);
+    img.fill(
+      whiteBackground,
+      color: img.ColorUint8.rgb(255, 255, 255),
+    );
+
+    // Note: compositeImage writes directly into whiteBackground to overlay the raster
+    img.compositeImage(
+      whiteBackground,
+      imgImage,
+      dstX: 0,
+      dstY: 0,
+    );
 
     // Encode as JPEG (returns Uint8List directly) with solid white background
     final imageBytes = img.encodeJpg(whiteBackground);
