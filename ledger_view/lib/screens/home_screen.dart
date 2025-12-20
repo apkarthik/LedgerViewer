@@ -3,6 +3,7 @@ import '../models/ledger_entry.dart';
 import '../models/customer.dart';
 import '../services/csv_service.dart';
 import '../services/storage_service.dart';
+import '../services/print_service.dart';
 import '../widgets/ledger_display.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -317,7 +318,8 @@ class HomeScreenState extends State<HomeScreen> {
                             return _allCustomers.where((Customer customer) {
                               return customer.customerId.toLowerCase().contains(query) ||
                                   customer.name.toLowerCase().contains(query) ||
-                                  customer.mobileNumber.toLowerCase().contains(query);
+                                  customer.mobileNumber.toLowerCase().contains(query) ||
+                                  customer.area.toLowerCase().contains(query);
                             });
                           },
                           displayStringForOption: (Customer customer) {
@@ -491,6 +493,19 @@ class HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.print, size: 20),
+                              onPressed: () => _printCustomerDetails(context),
+                              tooltip: 'Print Customer Details',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            const Icon(Icons.expand_more),
+                          ],
+                        ),
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
@@ -503,6 +518,14 @@ class HomeScreenState extends State<HomeScreen> {
                                 if (_selectedCustomer!.mobileNumber.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   _buildDetailRow('Mobile Number', _selectedCustomer!.mobileNumber),
+                                ],
+                                if (_selectedCustomer!.area.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow('Area', _selectedCustomer!.area),
+                                ],
+                                if (_selectedCustomer!.gpay.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow('GPAY', _selectedCustomer!.gpay),
                                 ],
                               ],
                             ),
@@ -587,6 +610,23 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _printCustomerDetails(BuildContext context) async {
+    if (_selectedCustomer == null) return;
+    
+    try {
+      await PrintService.printCustomerDetails(_selectedCustomer!);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error printing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   @override
