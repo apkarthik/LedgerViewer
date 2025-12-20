@@ -27,9 +27,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
   String _balanceComparison = 'greater'; // 'greater' or 'less'
   bool _useBalanceFilter = false;
   bool _useDaysFilter = false;
-  
-  // Collapsible filter state
-  bool _isFilterExpanded = true;
+  final ExpansionTileController _filterController = ExpansionTileController();
 
   @override
   void initState() {
@@ -65,8 +63,10 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
       setState(() {
         _allBalances = balances;
         _isLoading = false;
-        _isFilterExpanded = false; // Collapse filters when showing results
       });
+
+      // Collapse filters when showing results
+      _filterController.collapse();
 
       // Apply filters
       _applyFilters();
@@ -222,6 +222,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
                   child: Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
+                      controller: _filterController,
                       title: Text(
                         'Filter Options',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -229,15 +230,10 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
                             ),
                       ),
                       leading: Icon(
-                        _isFilterExpanded ? Icons.filter_alt : Icons.filter_alt_outlined,
+                        Icons.filter_alt,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      initiallyExpanded: _isFilterExpanded,
-                      onExpansionChanged: (expanded) {
-                        setState(() {
-                          _isFilterExpanded = expanded;
-                        });
-                      },
+                      initiallyExpanded: true,
                       children: [
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

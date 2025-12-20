@@ -29,6 +29,7 @@ class PrintService {
   static const double noWidth = 20.0;
   static const double debitWidth = 42.0;
   static const double creditWidth = 42.0;
+  static const int _rgbChannelCount = 3;
 
   static Future<void> printLedger(LedgerResult result) async {
     final pdf = await _generateLedgerPdf(result);
@@ -763,21 +764,39 @@ class PrintService {
   static Future<void> _sharePdfAsImage(Uint8List pdfBytes, String filenameBase) async {
     // Convert PDF to image using printing package with proper DPI for quality
     // Using JPEG format to ensure white background (no transparency issues)
-    final image = await Printing.raster(pdfBytes, dpi: 300);
-    final pdfRaster = await image.first;
-    
-    // Convert PdfRaster to JPEG using the image package
-    // PdfRaster.pixels returns raw RGBA pixel data
-    final imgImage = img.Image.fromBytes(
-      width: pdfRaster.width,
-      height: pdfRaster.height,
-      bytes: pdfRaster.pixels.buffer,
+    final rasters = await Printing.raster(pdfBytes, dpi: 300);
+    final pdfRaster = await rasters.first;
+
+    // Convert raster to PNG first to preserve colors, then flatten on white background
+    final pngBytes = await pdfRaster.toPng();
+    final imgImage = img.decodePng(pngBytes);
+
+    if (imgImage == null) {
+      throw Exception('Failed to decode PDF image for sharing');
+    }
+
+    final whiteBackground = img.Image(
+      width: imgImage.width,
+      height: imgImage.height,
       format: img.Format.uint8,
-      numChannels: 4, // RGBA format
+      numChannels: _rgbChannelCount,
     );
-    
-    // Encode as JPEG (returns Uint8List directly)
-    final imageBytes = img.encodeJpg(imgImage);
+
+    img.fill(
+      whiteBackground,
+      color: img.ColorUint8.rgb(255, 255, 255),
+    );
+
+    // Note: compositeImage writes directly into whiteBackground to overlay the raster
+    img.compositeImage(
+      whiteBackground,
+      imgImage,
+      dstX: 0,
+      dstY: 0,
+    );
+
+    // Encode as JPEG (returns Uint8List directly) with solid white background
+    final imageBytes = img.encodeJpg(whiteBackground);
     
     // Add timestamp to filename to ensure uniqueness
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
