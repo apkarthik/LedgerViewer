@@ -41,25 +41,22 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
 
     try {
       // Get URLs
-      final masterUrl = await StorageService.getMasterSheetUrl();
       final ledgerUrl = await StorageService.getLedgerSheetUrl();
 
-      if (masterUrl == null || masterUrl.isEmpty || ledgerUrl == null || ledgerUrl.isEmpty) {
+      if (ledgerUrl == null || ledgerUrl.isEmpty) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Please configure Master and Ledger Sheet URLs in Settings first';
+          _errorMessage = 'Please configure Ledger Sheet URL in Settings first';
         });
         return;
       }
 
-      // Fetch customer data
-      final customers = await CsvService.fetchCustomerData(masterUrl);
-      
       // Fetch ledger data
       final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
 
-      // Analyze balances
-      final balances = CsvService.analyzeCustomerBalances(ledgerData, customers);
+      // Analyze balances - no longer requires master sheet
+      // Customer information will be extracted directly from ledger data
+      final balances = CsvService.analyzeCustomerBalances(ledgerData);
 
       setState(() {
         _allBalances = balances;

@@ -97,6 +97,43 @@ void main() {
       expect(result, isNotNull);
       expect(result!.customerName, equals('1139B.Pushpa Malliga Teacher'));
     });
+
+    test('findLedgerByNumber handles missing closing balance row (matched debit/credit)', () {
+      final testDataBalanced = [
+        ['Ledger:', '2001.John Customer', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['2025-04-01 00:00:00', 'To', 'Opening Balance', '', '', '50000', ''],
+        ['2025-04-15 00:00:00', 'To', '2001.John Customer', 'Sales', '123', '25000', ''],
+        ['2025-04-20 00:00:00', 'By', 'Cash', 'Receipt', '124', '', '75000'],
+      ];
+
+      final result = CsvService.findLedgerByNumber(testDataBalanced, '2001');
+      
+      expect(result, isNotNull);
+      expect(result!.customerName, equals('2001.John Customer'));
+      // When closing balance row is missing, totals should be calculated from entries
+      expect(result.totalDebit, equals('75000'));
+      expect(result.totalCredit, equals('75000'));
+      expect(result.closingBalance, equals('0'));
+      expect(result.entries.length, equals(3));
+    });
+
+    test('findLedgerByNumber calculates totals correctly when no totals row exists', () {
+      final testDataNoTotals = [
+        ['Ledger:', '2002.Jane Doe', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['2025-04-01 00:00:00', 'To', 'Opening Balance', '', '', '10000', ''],
+        ['2025-04-10 00:00:00', 'By', 'Cash', 'Receipt', '200', '', '5000'],
+        ['2025-04-15 00:00:00', 'By', 'Cash', 'Receipt', '201', '', '5000'],
+      ];
+
+      final result = CsvService.findLedgerByNumber(testDataNoTotals, '2002');
+      
+      expect(result, isNotNull);
+      expect(result!.totalDebit, equals('10000'));
+      expect(result.totalCredit, equals('10000'));
+      expect(result.closingBalance, equals('0'));
+    });
   });
 
   group('CsvService - Customer Parsing', () {
@@ -174,6 +211,74 @@ void main() {
       
       expect(customer.matchesSearch('12345'), isTrue);
       expect(customer.matchesSearch('99999'), isFalse);
+    });
+  });
+
+  group('CsvService - Customer Balance Analysis', () {
+    test('analyzeCustomerBalances works without master sheet', () {
+      final testData = [
+        ['Ledger:', '1033.Saravana[V O C Nagar', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['2025-04-01 00:00:00', 'To', 'Opening Balance', '', '', '56012', ''],
+        ['56012', '', '', '', '', '', ''],
+        ['', 'By', 'Closing Balance', '', '', '', '56012'],
+        ['56012', '', '', '', '', '', '56012'],
+        ['', '', '', '', '', '', ''],
+        ['Ledger:', '1035.Vasanthi Teacher', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['2025-07-21 00:00:00', 'To', '1035.Vasanthi Teacher', 'Sales', '2041', '101000', ''],
+        ['2025-07-21 00:00:00', 'By', 'Cash', 'Receipt', '2041', '', '89700'],
+        ['101000', '', '', '', '', '', '93700'],
+        ['', 'By', 'Closing Balance', '', '', '', '7300'],
+        ['101000', '', '', '', '', '', '101000'],
+      ];
+
+      // Call without providing customer list
+      final balances = CsvService.analyzeCustomerBalances(testData);
+      
+      expect(balances.length, equals(2));
+      expect(balances[0].customerId, equals('1033'));
+      expect(balances[0].name, equals('Saravana[V O C Nagar'));
+      expect(balances[0].balance, equals(56012.0));
+      expect(balances[1].customerId, equals('1035'));
+      expect(balances[1].name, equals('Vasanthi Teacher'));
+      expect(balances[1].balance, equals(7300.0));
+    });
+
+    test('analyzeCustomerBalances handles customers with matched debit/credit', () {
+      final testData = [
+        ['Ledger:', '2001.John Customer', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['2025-04-01 00:00:00', 'To', 'Opening Balance', '', '', '50000', ''],
+        ['2025-04-15 00:00:00', 'To', '2001.John Customer', 'Sales', '123', '25000', ''],
+        ['2025-04-20 00:00:00', 'By', 'Cash', 'Receipt', '124', '', '75000'],
+      ];
+
+      final balances = CsvService.analyzeCustomerBalances(testData);
+      
+      expect(balances.length, equals(1));
+      expect(balances[0].customerId, equals('2001'));
+      expect(balances[0].name, equals('John Customer'));
+      expect(balances[0].balance, equals(0.0)); // Matched debit and credit
+    });
+
+    test('analyzeCustomerBalances extracts last credit date correctly', () {
+      final testData = [
+        ['Ledger:', '1035.Vasanthi Teacher', '1-Apr-2025 to 23-Nov-2025', '', '', '', ''],
+        ['Date', 'Particulars', '', 'Vch Type', 'Vch No.', 'Debit', 'Credit'],
+        ['2025-07-21 00:00:00', 'To', '1035.Vasanthi Teacher', 'Sales', '2041', '101000', ''],
+        ['2025-07-21 00:00:00', 'By', 'Cash', 'Receipt', '2041', '', '89700'],
+        ['101000', '', '', '', '', '', '93700'],
+        ['', 'By', 'Closing Balance', '', '', '', '7300'],
+      ];
+
+      final balances = CsvService.analyzeCustomerBalances(testData);
+      
+      expect(balances.length, equals(1));
+      expect(balances[0].lastCreditDate, isNotNull);
+      expect(balances[0].lastCreditDate!.year, equals(2025));
+      expect(balances[0].lastCreditDate!.month, equals(7));
+      expect(balances[0].lastCreditDate!.day, equals(21));
     });
   });
 

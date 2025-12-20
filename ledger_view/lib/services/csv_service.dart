@@ -154,6 +154,7 @@ class CsvService {
     String totalDebit = '';
     String totalCredit = '';
     String closingBalance = '';
+    bool foundClosingBalance = false;
     
     // Track the previous row for Total calculation
     List<dynamic>? previousRow;
@@ -176,6 +177,7 @@ class CsvService {
 
       // Check if this is a closing balance row
       if (particulars.toLowerCase().contains('closing balance')) {
+        foundClosingBalance = true;
         closingBalance = credit.isNotEmpty ? credit : debit;
         // Get totals from the row above (previous row)
         // CSV structure: The totals row appears before the Closing Balance row
@@ -211,6 +213,34 @@ class CsvService {
       }
       
       previousRow = row;
+    }
+
+    // If closing balance row is not found (e.g., when debit and credit are matched),
+    // calculate totals from the entries
+    if (!foundClosingBalance) {
+      double calculatedDebit = 0.0;
+      double calculatedCredit = 0.0;
+      
+      for (final entry in entries) {
+        if (entry.debit.isNotEmpty) {
+          final debitValue = double.tryParse(entry.debit.replaceAll(',', ''));
+          if (debitValue != null) {
+            calculatedDebit += debitValue;
+          }
+        }
+        if (entry.credit.isNotEmpty) {
+          final creditValue = double.tryParse(entry.credit.replaceAll(',', ''));
+          if (creditValue != null) {
+            calculatedCredit += creditValue;
+          }
+        }
+      }
+      
+      // Format the calculated totals
+      totalDebit = calculatedDebit.toStringAsFixed(0);
+      totalCredit = calculatedCredit.toStringAsFixed(0);
+      // Closing balance is 0 when debits and credits match
+      closingBalance = '0';
     }
 
     return LedgerResult(
@@ -289,13 +319,54 @@ class CsvService {
 
   /// Analyze customer balances from ledger data
   /// Returns a list of CustomerBalance objects with balance and last credit date
+  /// Extracts customer information directly from ledger data (no master sheet required)
   static List<CustomerBalance> analyzeCustomerBalances(
     List<List<dynamic>> ledgerData,
-    List<Customer> customers,
+    [List<Customer>? customers],
   ) {
-    if (ledgerData.isEmpty || customers.isEmpty) return [];
+    if (ledgerData.isEmpty) return [];
 
     final balances = <CustomerBalance>[];
+    
+    // If customers list is not provided, extract from ledger data
+    if (customers == null || customers.isEmpty) {
+      // Extract all unique customers from ledger data
+      final customerMap = <String, Customer>{};
+      
+      for (int i = 0; i < ledgerData.length; i++) {
+        final row = ledgerData[i];
+        
+        // Check if this row is a ledger header row (contains "Ledger:")
+        if (row.isNotEmpty && row[0].toString().trim().toLowerCase() == 'ledger:') {
+          // Column 1 contains the customer number and name (e.g., "1139B.Pushpa Malliga Teacher")
+          final customerInfo = row.length > 1 ? row[1].toString().trim() : '';
+          
+          if (customerInfo.isNotEmpty) {
+            // Extract the number part and name part
+            String customerId = '';
+            String name = '';
+            if (customerInfo.contains('.')) {
+              final parts = customerInfo.split('.');
+              customerId = parts[0].trim();
+              name = parts.length > 1 ? parts[1].trim() : '';
+            } else {
+              // If no dot, use the whole thing as ID
+              customerId = customerInfo;
+            }
+            
+            if (customerId.isNotEmpty && !customerMap.containsKey(customerId)) {
+              customerMap[customerId] = Customer(
+                customerId: customerId,
+                name: name,
+                mobileNumber: '', // Mobile number not available in ledger data
+              );
+            }
+          }
+        }
+      }
+      
+      customers = customerMap.values.toList();
+    }
 
     for (final customer in customers) {
       // Find the ledger for this customer
