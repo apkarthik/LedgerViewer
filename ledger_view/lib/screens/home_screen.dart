@@ -497,6 +497,14 @@ class HomeScreenState extends State<HomeScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
+                              icon: const Icon(Icons.share, size: 20),
+                              onPressed: () => _shareCustomerDetails(context),
+                              tooltip: 'Share Customer Details',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
                               icon: const Icon(Icons.print, size: 20),
                               onPressed: () => _printCustomerDetails(context),
                               tooltip: 'Print Customer Details',
@@ -610,6 +618,23 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _shareCustomerDetails(BuildContext context) async {
+    if (_selectedCustomer == null) return;
+    
+    try {
+      await PrintService.shareCustomerDetails(_selectedCustomer!);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _printCustomerDetails(BuildContext context) async {

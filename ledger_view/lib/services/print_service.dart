@@ -23,7 +23,7 @@ class PrintService {
   static const double debitWidth = 42.0;
   static const double creditWidth = 42.0;
 
-  static Future<void> printLedger(LedgerResult result) async {
+  static pw.Document _generateLedgerPdf(LedgerResult result) {
     final pdf = pw.Document();
 
     // Text style for narrow font (using condensed spacing)
@@ -260,12 +260,27 @@ class PrintService {
       ),
     );
 
+    return pdf;
+  }
+
+  static Future<void> printLedger(LedgerResult result) async {
+    final pdf = _generateLedgerPdf(result);
+
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
     );
   }
 
-  static Future<void> printCustomerDetails(Customer customer) async {
+  static Future<void> shareLedger(LedgerResult result) async {
+    final pdf = _generateLedgerPdf(result);
+
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'ledger_${result.customerName.replaceAll(' ', '_')}_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
+    );
+  }
+
+  static pw.Document _generateCustomerDetailsPdf(Customer customer) {
     final pdf = pw.Document();
 
     // Text style for customer details
@@ -398,8 +413,23 @@ class PrintService {
       ),
     );
 
+    return pdf;
+  }
+
+  static Future<void> printCustomerDetails(Customer customer) async {
+    final pdf = _generateCustomerDetailsPdf(customer);
+
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
+    );
+  }
+
+  static Future<void> shareCustomerDetails(Customer customer) async {
+    final pdf = _generateCustomerDetailsPdf(customer);
+
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'customer_${customer.customerId}_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
     );
   }
 

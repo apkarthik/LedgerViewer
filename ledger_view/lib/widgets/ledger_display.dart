@@ -66,6 +66,16 @@ class LedgerDisplay extends StatelessWidget {
                     ],
                   ),
                 ),
+                // Share Button
+                IconButton(
+                  onPressed: () => _shareLedger(context),
+                  icon: const Icon(Icons.share, color: Colors.white),
+                  tooltip: 'Share Ledger',
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 // Print Button
                 IconButton(
                   onPressed: () => _printLedger(context),
@@ -121,19 +131,35 @@ class LedgerDisplay extends StatelessWidget {
                   
                   const SizedBox(height: 16),
                   
-                  // Print Button at bottom
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _printLedger(context),
-                      icon: const Icon(Icons.print),
-                      label: const Text('Print Ledger'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: printButtonColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(16),
+                  // Share & Print Buttons at bottom
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _shareLedger(context),
+                          icon: const Icon(Icons.share),
+                          label: const Text('Share Ledger'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _printLedger(context),
+                          icon: const Icon(Icons.print),
+                          label: const Text('Print Ledger'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: printButtonColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -142,6 +168,21 @@ class LedgerDisplay extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _shareLedger(BuildContext context) async {
+    try {
+      await PrintService.shareLedger(result);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _printLedger(BuildContext context) async {
