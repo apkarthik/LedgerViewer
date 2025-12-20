@@ -30,6 +30,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
   
   // Collapsible filter state
   bool _isFilterExpanded = true;
+  final ExpansionTileController _filterController = ExpansionTileController();
 
   @override
   void initState() {
@@ -67,6 +68,8 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
         _isLoading = false;
         _isFilterExpanded = false; // Collapse filters when showing results
       });
+
+      _filterController.collapse();
 
       // Apply filters
       _applyFilters();
@@ -222,6 +225,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
                   child: Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
+                      controller: _filterController,
                       title: Text(
                         'Filter Options',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
