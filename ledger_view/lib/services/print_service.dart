@@ -760,10 +760,11 @@ class PrintService {
 
   /// Share PDF as image
   static Future<void> _sharePdfAsImage(Uint8List pdfBytes, String filenameBase) async {
-    // Convert PDF to image using printing package
-    final image = await Printing.raster(pdfBytes);
+    // Convert PDF to image using printing package with proper DPI for quality
+    // Using JPEG format to ensure white background (no transparency issues)
+    final image = await Printing.raster(pdfBytes, dpi: 300);
     final pdfRaster = await image.first;
-    final imageBytes = await pdfRaster.toImage();
+    final imageBytes = await pdfRaster.toJpeg();
     
     // Add timestamp to filename to ensure uniqueness
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
