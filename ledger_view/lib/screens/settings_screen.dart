@@ -198,18 +198,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           controller.text = data.text!;
           _hasChanges = true;
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$label pasted from clipboard'),
-              backgroundColor: Colors.blue.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
+        // Remove the snackbar notification to prevent duplicate alerts
+        // The user can see the URL is pasted in the text field
       }
     } catch (e) {
       if (mounted) {
@@ -641,7 +631,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Version 1.0.0',
+                        'Version 1.1.0',
                         style: TextStyle(
                           color: Colors.grey.shade500,
                         ),

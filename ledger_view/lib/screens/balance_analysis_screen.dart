@@ -4,6 +4,7 @@ import '../models/customer.dart';
 import '../models/customer_balance.dart';
 import '../services/csv_service.dart';
 import '../services/storage_service.dart';
+import '../services/print_service.dart';
 import 'home_screen.dart';
 
 class BalanceAnalysisScreen extends StatefulWidget {
@@ -79,6 +80,9 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
 
     List<CustomerBalance> filtered = List.from(_allBalances);
 
+    // Filter out customers with zero balance
+    filtered = filtered.where((cb) => cb.balance != 0).toList();
+
     // Apply balance filter
     if (_useBalanceFilter) {
       final balanceAmount = double.tryParse(_balanceController.text);
@@ -143,6 +147,42 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
       appBar: AppBar(
         title: const Text('Balance Analysis'),
         automaticallyImplyLeading: false,
+        actions: [
+          if (_filteredBalances.isNotEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.print),
+              onPressed: () => _printAnalysis(context),
+              tooltip: 'Print Analysis',
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.share),
+              tooltip: 'Share Analysis',
+              onSelected: (value) => _shareAnalysis(context, value == 'image'),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'pdf',
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text('Share as PDF'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'image',
+                  child: Row(
+                    children: [
+                      Icon(Icons.image, color: Colors.blue),
+                      SizedBox(width: 12),
+                      Text('Share as Image'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -581,6 +621,36 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _printAnalysis(BuildContext context) async {
+    try {
+      await PrintService.printBalanceAnalysis(_filteredBalances);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error printing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareAnalysis(BuildContext context, bool asImage) async {
+    try {
+      await PrintService.shareBalanceAnalysis(_filteredBalances, asImage: asImage);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   @override

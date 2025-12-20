@@ -337,7 +337,6 @@ class HomeScreenState extends State<HomeScreen> {
                               focusNode: focusNode,
                               keyboardType: TextInputType.text,
                               decoration: InputDecoration(
-                                hintText: 'e.g., 1139B, Pushpa, or 9876543210',
                                 prefixIcon: const Icon(Icons.search),
                                 suffixIcon: controller.text.isNotEmpty
                                     ? IconButton(
@@ -387,29 +386,42 @@ class HomeScreenState extends State<HomeScreen> {
                                       itemCount: options.length,
                                       itemBuilder: (context, index) {
                                         final customer = options.elementAt(index);
-                                        return ListTile(
-                                          dense: true,
-                                          title: Text(
-                                            customer.customerId,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Theme.of(context).colorScheme.primary,
-                                            ),
+                                      return ListTile(
+                                        dense: true,
+                                        title: Text(
+                                          customer.customerId,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.primary,
                                           ),
-                                          subtitle: Text(customer.name),
-                                          trailing: customer.mobileNumber.isNotEmpty
-                                              ? Text(
-                                                  customer.mobileNumber,
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade600,
-                                                    fontSize: 12,
-                                                  ),
-                                                )
-                                              : null,
-                                          onTap: () {
-                                            onSelected(customer);
-                                          },
-                                        );
+                                        ),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(customer.name),
+                                            if (customer.area.isNotEmpty)
+                                              Text(
+                                                customer.area,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        trailing: customer.mobileNumber.isNotEmpty
+                                            ? Text(
+                                                customer.mobileNumber,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 12,
+                                                ),
+                                              )
+                                            : null,
+                                        onTap: () {
+                                          onSelected(customer);
+                                        },
+                                      );
                                       },
                                     ),
                                   ),
