@@ -772,6 +772,7 @@ class PrintService {
       width: pdfRaster.width,
       height: pdfRaster.height,
       bytes: pdfRaster.pixels.buffer,
+      format: img.Format.uint8,
       numChannels: 4, // RGBA format
     );
     
