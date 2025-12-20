@@ -292,13 +292,13 @@ class PrintService {
           ? customerParts[0] 
           : result.customerName)
           .replaceAll(RegExp(r'[^\w\s-]'), '');
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       
       if (asImage) {
-        // Convert PDF to image
-        await _sharePdfAsImage(pdfBytes, 'Ledger_${customerIdClean}_$timestamp');
+        // Convert PDF to image (timestamp added in _sharePdfAsImage)
+        await _sharePdfAsImage(pdfBytes, 'Ledger_$customerIdClean');
       } else {
         // Share as PDF
+        final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
         await _sharePdfFile(pdfBytes, 'Ledger_${customerIdClean}_$timestamp.pdf');
       }
     } catch (e) {
@@ -315,14 +315,12 @@ class PrintService {
       final pdf = await _generateBalanceAnalysisPdf(balances);
       final pdfBytes = await pdf.save();
       
-      // Create meaningful filename
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      
       if (asImage) {
-        // Convert PDF to image
-        await _sharePdfAsImage(pdfBytes, 'Balance_Analysis_$timestamp');
+        // Convert PDF to image (timestamp added in _sharePdfAsImage)
+        await _sharePdfAsImage(pdfBytes, 'Balance_Analysis');
       } else {
         // Share as PDF
+        final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
         await _sharePdfFile(pdfBytes, 'Balance_Analysis_$timestamp.pdf');
       }
     } catch (e) {
@@ -764,15 +762,20 @@ class PrintService {
   static Future<void> _sharePdfAsImage(Uint8List pdfBytes, String filenameBase) async {
     // Convert PDF to image using printing package
     final image = await Printing.raster(pdfBytes);
-    final imageBytes = await image.first.toPng();
+    final pdfRaster = await image.first;
+    final imageBytes = await pdfRaster.toPng();
+    
+    // Add timestamp to filename to ensure uniqueness
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final filenameWithTimestamp = '${filenameBase}_$timestamp';
     
     final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/$filenameBase.png');
+    final file = File('${tempDir.path}/$filenameWithTimestamp.png');
     await file.writeAsBytes(imageBytes);
     
     await Share.shareXFiles(
       [XFile(file.path)],
-      subject: filenameBase,
+      subject: filenameWithTimestamp,
     );
   }
 }
