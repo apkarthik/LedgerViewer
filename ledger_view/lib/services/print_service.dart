@@ -764,7 +764,8 @@ class PrintService {
   static Future<void> _sharePdfAsImage(Uint8List pdfBytes, String filenameBase) async {
     // Convert PDF to image using printing package
     final image = await Printing.raster(pdfBytes);
-    final imageBytes = await image.first.toPng();
+    final pdfRaster = await image.first;
+    final imageBytes = await pdfRaster.toPng();
     
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/$filenameBase.png');
