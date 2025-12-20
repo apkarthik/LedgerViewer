@@ -13,6 +13,7 @@ void main() {
         entries: [
           LedgerEntry(
             date: '01-Jan-25',
+            toBy: 'By',
             particulars: 'Test Entry',
             vchType: 'Sales',
             vchNo: '001',
