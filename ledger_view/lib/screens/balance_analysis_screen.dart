@@ -66,9 +66,9 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
       setState(() {
         _allBalances = balances;
         _isLoading = false;
-        _isFilterExpanded = false; // Collapse filters when showing results
       });
 
+      // Collapse filters when showing results
       _filterController.collapse();
 
       // Apply filters

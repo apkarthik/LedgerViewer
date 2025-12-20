@@ -771,7 +771,7 @@ class PrintService {
     final imgImage = img.decodePng(pngBytes);
 
     if (imgImage == null) {
-      return;
+      throw Exception('Failed to decode PDF image for sharing');
     }
 
     final whiteBackground = img.Image(
