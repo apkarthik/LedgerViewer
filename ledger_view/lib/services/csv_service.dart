@@ -26,7 +26,8 @@ class CsvService {
     return await File(filePath).readAsBytes();
   }
   /// Fetch and parse customer data from the Master sheet
-  /// Column A contains "CustomerID.Name" format, Column B contains Mobile Number
+  /// Column A contains "CustomerID.Name" format, Column B contains Mobile Number,
+  /// Column C contains Area, Column D contains GPAY
   static Future<List<Customer>> fetchCustomerData(String url) async {
     try {
       final csvData = await fetchCsvData(url);

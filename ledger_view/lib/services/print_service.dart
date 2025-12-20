@@ -3,6 +3,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import '../models/ledger_entry.dart';
+import '../models/customer.dart';
 import '../utils/voucher_type_mapper.dart';
 
 class PrintService {
@@ -253,6 +254,144 @@ class PrintService {
                     textAlign: pw.TextAlign.left,
                   ),
                 ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+    );
+  }
+
+  static Future<void> printCustomerDetails(Customer customer) async {
+    final pdf = pw.Document();
+
+    // Text style for customer details
+    final normalTextStyle = pw.TextStyle(
+      fontSize: 8,
+      letterSpacing: -0.2,
+    );
+    final boldTextStyle = pw.TextStyle(
+      fontSize: 8,
+      fontWeight: pw.FontWeight.bold,
+      letterSpacing: -0.2,
+    );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: thermalPageFormat,
+        build: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Center(
+                child: pw.Text(
+                  'CUSTOMER DETAILS',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 3),
+              pw.Center(
+                child: pw.Text(
+                  DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+                  style: const pw.TextStyle(fontSize: 8, letterSpacing: -0.2),
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Divider(thickness: 1),
+              pw.SizedBox(height: 6),
+
+              // Customer ID
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.SizedBox(
+                    width: 60,
+                    child: pw.Text('Customer ID', style: boldTextStyle),
+                  ),
+                  pw.Text(': ', style: normalTextStyle),
+                  pw.Expanded(
+                    child: pw.Text(customer.customerId, style: normalTextStyle),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+
+              // Name
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.SizedBox(
+                    width: 60,
+                    child: pw.Text('Name', style: boldTextStyle),
+                  ),
+                  pw.Text(': ', style: normalTextStyle),
+                  pw.Expanded(
+                    child: pw.Text(customer.name, style: normalTextStyle),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+
+              // Mobile Number
+              if (customer.mobileNumber.isNotEmpty) ...[
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.SizedBox(
+                      width: 60,
+                      child: pw.Text('Mobile', style: boldTextStyle),
+                    ),
+                    pw.Text(': ', style: normalTextStyle),
+                    pw.Expanded(
+                      child: pw.Text(customer.mobileNumber, style: normalTextStyle),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 4),
+              ],
+
+              // Area
+              if (customer.area.isNotEmpty) ...[
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.SizedBox(
+                      width: 60,
+                      child: pw.Text('Area', style: boldTextStyle),
+                    ),
+                    pw.Text(': ', style: normalTextStyle),
+                    pw.Expanded(
+                      child: pw.Text(customer.area, style: normalTextStyle),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 4),
+              ],
+
+              // GPAY
+              if (customer.gpay.isNotEmpty) ...[
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.SizedBox(
+                      width: 60,
+                      child: pw.Text('GPAY', style: boldTextStyle),
+                    ),
+                    pw.Text(': ', style: normalTextStyle),
+                    pw.Expanded(
+                      child: pw.Text(customer.gpay, style: normalTextStyle),
+                    ),
+                  ],
+                ),
+              ],
             ],
           );
         },
