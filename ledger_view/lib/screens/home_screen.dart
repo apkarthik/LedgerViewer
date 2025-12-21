@@ -3,6 +3,7 @@ import '../models/ledger_entry.dart';
 import '../models/customer.dart';
 import '../services/csv_service.dart';
 import '../services/storage_service.dart';
+import '../services/print_service.dart';
 import '../widgets/ledger_display.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -252,6 +253,93 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  colors: [Colors.blue, Colors.purple, Colors.pink],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: const Icon(Icons.help_outline, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            const Text('How to use'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '📋 Setup',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '1. Open your Google Sheet with customer and ledger data\n'
+                '2. Go to File → Share → Publish to web\n'
+                '3. Publish both Master and Ledger sheets as CSV\n'
+                '4. Copy the CSV URLs and paste them in Settings',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '🏠 Home Screen',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Search for customers by ID, name, or phone\n'
+                '• View detailed ledger statements\n'
+                '• Print or share ledgers as PDF/Image\n'
+                '• Filter ledger by date range',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '📊 Balance Analysis',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Filter customers by outstanding balance\n'
+                '• Find customers without credits for X days\n'
+                '• View total balances across all customers\n'
+                '• Export analysis as PDF or Image',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '🎨 Themes',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Choose from multiple color themes\n'
+                '• Customized for better readability',
+                style: TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it!'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -271,6 +359,20 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  colors: [Colors.blue, Colors.purple, Colors.pink],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: const Icon(Icons.help_outline, color: Colors.white),
+            ),
+            tooltip: 'Help',
+            onPressed: _showHelpDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshLedgerData,
@@ -317,7 +419,8 @@ class HomeScreenState extends State<HomeScreen> {
                             return _allCustomers.where((Customer customer) {
                               return customer.customerId.toLowerCase().contains(query) ||
                                   customer.name.toLowerCase().contains(query) ||
-                                  customer.mobileNumber.toLowerCase().contains(query);
+                                  customer.mobileNumber.toLowerCase().contains(query) ||
+                                  customer.area.toLowerCase().contains(query);
                             });
                           },
                           displayStringForOption: (Customer customer) {
@@ -335,7 +438,6 @@ class HomeScreenState extends State<HomeScreen> {
                               focusNode: focusNode,
                               keyboardType: TextInputType.text,
                               decoration: InputDecoration(
-                                hintText: 'e.g., 1139B, Pushpa, or 9876543210',
                                 prefixIcon: const Icon(Icons.search),
                                 suffixIcon: controller.text.isNotEmpty
                                     ? IconButton(
@@ -385,29 +487,42 @@ class HomeScreenState extends State<HomeScreen> {
                                       itemCount: options.length,
                                       itemBuilder: (context, index) {
                                         final customer = options.elementAt(index);
-                                        return ListTile(
-                                          dense: true,
-                                          title: Text(
-                                            customer.customerId,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Theme.of(context).colorScheme.primary,
-                                            ),
+                                      return ListTile(
+                                        dense: true,
+                                        title: Text(
+                                          customer.customerId,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.primary,
                                           ),
-                                          subtitle: Text(customer.name),
-                                          trailing: customer.mobileNumber.isNotEmpty
-                                              ? Text(
-                                                  customer.mobileNumber,
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade600,
-                                                    fontSize: 12,
-                                                  ),
-                                                )
-                                              : null,
-                                          onTap: () {
-                                            onSelected(customer);
-                                          },
-                                        );
+                                        ),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(customer.name),
+                                            if (customer.area.isNotEmpty)
+                                              Text(
+                                                customer.area,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        trailing: customer.mobileNumber.isNotEmpty
+                                            ? Text(
+                                                customer.mobileNumber,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 12,
+                                                ),
+                                              )
+                                            : null,
+                                        onTap: () {
+                                          onSelected(customer);
+                                        },
+                                      );
                                       },
                                     ),
                                   ),
@@ -491,6 +606,19 @@ class HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.print, size: 20),
+                              onPressed: () => _printCustomerDetails(context),
+                              tooltip: 'Print Customer Details',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            const Icon(Icons.expand_more),
+                          ],
+                        ),
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
@@ -503,6 +631,14 @@ class HomeScreenState extends State<HomeScreen> {
                                 if (_selectedCustomer!.mobileNumber.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   _buildDetailRow('Mobile Number', _selectedCustomer!.mobileNumber),
+                                ],
+                                if (_selectedCustomer!.area.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow('Area', _selectedCustomer!.area),
+                                ],
+                                if (_selectedCustomer!.gpay.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow('GPAY', _selectedCustomer!.gpay),
                                 ],
                               ],
                             ),
@@ -587,6 +723,23 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _printCustomerDetails(BuildContext context) async {
+    if (_selectedCustomer == null) return;
+    
+    try {
+      await PrintService.printCustomerDetails(_selectedCustomer!);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error printing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   @override

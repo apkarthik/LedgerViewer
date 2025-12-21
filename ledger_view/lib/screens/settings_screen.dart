@@ -198,18 +198,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           controller.text = data.text!;
           _hasChanges = true;
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$label pasted from clipboard'),
-              backgroundColor: Colors.blue.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
+        // Remove the snackbar notification to prevent duplicate alerts
+        // The user can see the URL is pasted in the text field
       }
     } catch (e) {
       if (mounted) {
@@ -224,11 +214,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  colors: [Colors.blue, Colors.purple, Colors.pink],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: const Icon(Icons.help_outline, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            const Text('How to use'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '📋 Setup',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '1. Open your Google Sheet with customer and ledger data\n'
+                '2. Go to File → Share → Publish to web\n'
+                '3. Publish both Master and Ledger sheets as CSV\n'
+                '4. Copy the CSV URLs and paste them in Settings',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '🏠 Home Screen',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Search for customers by ID, name, or phone\n'
+                '• View detailed ledger statements\n'
+                '• Print or share ledgers as PDF/Image\n'
+                '• Filter ledger by date range',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '📊 Balance Analysis',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Filter customers by outstanding balance\n'
+                '• Find customers without credits for X days\n'
+                '• View total balances across all customers\n'
+                '• Export analysis as PDF or Image',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '🎨 Themes',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Choose from multiple color themes\n'
+                '• Customized for better readability',
+                style: TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it!'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
+        actions: [
+          IconButton(
+            icon: ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  colors: [Colors.blue, Colors.purple, Colors.pink],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: const Icon(Icons.help_outline, color: Colors.white),
+            ),
+            tooltip: 'Help',
+            onPressed: _showHelpDialog,
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -641,7 +734,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Version 1.0.0',
+                        'Version 1.1.0',
                         style: TextStyle(
                           color: Colors.grey.shade500,
                         ),

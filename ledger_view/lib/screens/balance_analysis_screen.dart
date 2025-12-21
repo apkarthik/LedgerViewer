@@ -4,6 +4,7 @@ import '../models/customer.dart';
 import '../models/customer_balance.dart';
 import '../services/csv_service.dart';
 import '../services/storage_service.dart';
+import '../services/print_service.dart';
 import 'home_screen.dart';
 
 class BalanceAnalysisScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
   String _balanceComparison = 'greater'; // 'greater' or 'less'
   bool _useBalanceFilter = false;
   bool _useDaysFilter = false;
+  final ExpansionTileController _filterController = ExpansionTileController();
 
   @override
   void initState() {
@@ -41,30 +43,30 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
 
     try {
       // Get URLs
-      final masterUrl = await StorageService.getMasterSheetUrl();
       final ledgerUrl = await StorageService.getLedgerSheetUrl();
 
-      if (masterUrl == null || masterUrl.isEmpty || ledgerUrl == null || ledgerUrl.isEmpty) {
+      if (ledgerUrl == null || ledgerUrl.isEmpty) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Please configure Master and Ledger Sheet URLs in Settings first';
+          _errorMessage = 'Please configure Ledger Sheet URL in Settings first';
         });
         return;
       }
 
-      // Fetch customer data
-      final customers = await CsvService.fetchCustomerData(masterUrl);
-      
       // Fetch ledger data
       final ledgerData = await CsvService.fetchCsvData(ledgerUrl);
 
-      // Analyze balances
-      final balances = CsvService.analyzeCustomerBalances(ledgerData, customers);
+      // Analyze balances - no longer requires master sheet
+      // Customer information will be extracted directly from ledger data
+      final balances = CsvService.analyzeCustomerBalances(ledgerData);
 
       setState(() {
         _allBalances = balances;
         _isLoading = false;
       });
+
+      // Collapse filters when showing results
+      _filterController.collapse();
 
       // Apply filters
       _applyFilters();
@@ -81,6 +83,9 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
     if (_allBalances.isEmpty) return;
 
     List<CustomerBalance> filtered = List.from(_allBalances);
+
+    // Filter out customers with zero balance
+    filtered = filtered.where((cb) => cb.balance != 0).toList();
 
     // Apply balance filter
     if (_useBalanceFilter) {
@@ -146,6 +151,42 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
       appBar: AppBar(
         title: const Text('Balance Analysis'),
         automaticallyImplyLeading: false,
+        actions: [
+          if (_filteredBalances.isNotEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.print),
+              onPressed: () => _printAnalysis(context),
+              tooltip: 'Print Analysis',
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.share),
+              tooltip: 'Share Analysis',
+              onSelected: (value) => _shareAnalysis(context, value == 'image'),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'pdf',
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text('Share as PDF'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'image',
+                  child: Row(
+                    children: [
+                      Icon(Icons.image, color: Colors.blue),
+                      SizedBox(width: 12),
+                      Text('Share as Image'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -178,143 +219,154 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
               children: [
                 // Filter Card
                 Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      controller: _filterController,
+                      title: Text(
+                        'Filter Options',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      leading: Icon(
+                        Icons.filter_alt,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      initiallyExpanded: true,
                       children: [
-                        Text(
-                          'Filter Options',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Balance Filter
-                        CheckboxListTile(
-                          value: _useBalanceFilter,
-                          onChanged: (value) {
-                            setState(() {
-                              _useBalanceFilter = value ?? false;
-                            });
-                          },
-                          title: const Text('Filter by Balance Amount'),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        if (_useBalanceFilter) ...[
-                          const SizedBox(height: 8),
-                          Row(
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                flex: 2,
-                                child: DropdownButtonFormField<String>(
-                                  value: _balanceComparison,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Comparison',
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  ),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: 'greater',
-                                      child: Text('Greater than'),
+                              // Balance Filter
+                              CheckboxListTile(
+                                value: _useBalanceFilter,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _useBalanceFilter = value ?? false;
+                                  });
+                                },
+                                title: const Text('Filter by Balance Amount'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              if (_useBalanceFilter) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: DropdownButtonFormField<String>(
+                                        value: _balanceComparison,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Comparison',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        ),
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 'greater',
+                                            child: Text('Greater than'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'less',
+                                            child: Text('Less than'),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _balanceComparison = value ?? 'greater';
+                                          });
+                                        },
+                                      ),
                                     ),
-                                    DropdownMenuItem(
-                                      value: 'less',
-                                      child: Text('Less than'),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 1,
+                                      child: TextField(
+                                        controller: _balanceController,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Amount',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                      ),
                                     ),
                                   ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _balanceComparison = value ?? 'greater';
-                                    });
-                                  },
                                 ),
+                              ],
+
+                              const SizedBox(height: 16),
+
+                              // Days Filter
+                              CheckboxListTile(
+                                value: _useDaysFilter,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _useDaysFilter = value ?? false;
+                                  });
+                                },
+                                title: const Text('Filter by Days without Credit'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 1,
-                                child: TextField(
-                                  controller: _balanceController,
+                              if (_useDaysFilter) ...[
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _daysController,
                                   decoration: const InputDecoration(
-                                    labelText: 'Amount',
+                                    labelText: 'Number of days (from today)',
                                     border: OutlineInputBorder(),
                                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    helperText: 'Shows customers with no credit entry for this many days',
                                   ),
                                   keyboardType: TextInputType.number,
                                 ),
+                              ],
+
+                              const SizedBox(height: 16),
+
+                              // Analyze Button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _isLoading ? null : () {
+                                    if (!_useBalanceFilter && !_useDaysFilter) {
+                                      _showError('Please select at least one filter option');
+                                      return;
+                                    }
+                                    if (_useBalanceFilter && _balanceController.text.isEmpty) {
+                                      _showError('Please enter balance amount');
+                                      return;
+                                    }
+                                    if (_useDaysFilter && _daysController.text.isEmpty) {
+                                      _showError('Please enter number of days');
+                                      return;
+                                    }
+                                    _analyzeBalances();
+                                  },
+                                  icon: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Icon(Icons.analytics),
+                                  label: Text(_isLoading ? 'Analyzing...' : 'Analyze'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-
-                        // Days Filter
-                        CheckboxListTile(
-                          value: _useDaysFilter,
-                          onChanged: (value) {
-                            setState(() {
-                              _useDaysFilter = value ?? false;
-                            });
-                          },
-                          title: const Text('Filter by Days without Credit'),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        if (_useDaysFilter) ...[
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _daysController,
-                            decoration: const InputDecoration(
-                              labelText: 'Number of days (from today)',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              helperText: 'Shows customers with no credit entry for this many days',
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-
-                        // Analyze Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _isLoading ? null : () {
-                              if (!_useBalanceFilter && !_useDaysFilter) {
-                                _showError('Please select at least one filter option');
-                                return;
-                              }
-                              if (_useBalanceFilter && _balanceController.text.isEmpty) {
-                                _showError('Please enter balance amount');
-                                return;
-                              }
-                              if (_useDaysFilter && _daysController.text.isEmpty) {
-                                _showError('Please enter number of days');
-                                return;
-                              }
-                              _analyzeBalances();
-                            },
-                            icon: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Icon(Icons.analytics),
-                            label: Text(_isLoading ? 'Analyzing...' : 'Analyze'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
                           ),
                         ),
                       ],
@@ -584,6 +636,36 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _printAnalysis(BuildContext context) async {
+    try {
+      await PrintService.printBalanceAnalysis(_filteredBalances);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error printing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareAnalysis(BuildContext context, bool asImage) async {
+    try {
+      await PrintService.shareBalanceAnalysis(_filteredBalances, asImage: asImage);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   @override
