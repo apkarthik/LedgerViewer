@@ -218,11 +218,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.help_outline, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('How to Use LedgerView'),
+            ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  colors: [Colors.blue, Colors.purple, Colors.pink],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: const Icon(Icons.help_outline, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            const Text('How to use'),
           ],
         ),
         content: SingleChildScrollView(
@@ -299,7 +308,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Settings'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline),
+            icon: ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  colors: [Colors.blue, Colors.purple, Colors.pink],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: const Icon(Icons.help_outline, color: Colors.white),
+            ),
             tooltip: 'Help',
             onPressed: _showHelpDialog,
           ),
