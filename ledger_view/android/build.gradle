@@ -24,6 +24,19 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+    
+    // Fix for AGP 8.0+ namespace requirement
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    // Set a fallback namespace for plugins that don't define one
+                    // Use the project name to create a unique namespace
+                    namespace = "com.ledgerview.plugin." + project.name.replaceAll('-', '_').replaceAll(':', '.')
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
