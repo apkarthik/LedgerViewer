@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -30,6 +31,10 @@ class PrintService {
   static const double debitWidth = 42.0;
   static const double creditWidth = 42.0;
   static const int _rgbChannelCount = 3;
+  
+  // WhatsApp sharing constants
+  static const int _whatsAppOpenDelayMs = 500;
+  static const String _whatsAppShareMessage = 'Please find your ledger statement attached.';
 
   static Future<void> printLedger(LedgerResult result) async {
     final pdf = await _generateLedgerPdf(result);
@@ -326,29 +331,102 @@ class PrintService {
   }
 
   /// Share ledger via WhatsApp
-  /// Opens system share sheet for WhatsApp sharing
-  static Future<void> shareViaWhatsApp(LedgerResult result) async {
+  /// Opens WhatsApp directly with the specified phone number
+  static Future<void> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
       
       final customerIdClean = _extractCleanCustomerId(result.customerName);
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
       
-      // Save PDF to temp directory
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/$filename');
-      await file.writeAsBytes(pdfBytes);
+      File file;
       
-      // Use system share sheet which will allow user to select WhatsApp
-      // This is the recommended approach as direct WhatsApp file sharing
-      // via URL scheme is not reliably supported across platforms
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'Ledger Statement',
-        text: 'Please find your ledger statement attached.',
-      );
+      if (asImage) {
+        // Convert PDF to image
+        final filename = 'Ledger_${customerIdClean}_$timestamp.jpg';
+        
+        // Convert PDF to image using printing package with proper DPI for quality
+        final rasters = await Printing.raster(pdfBytes, dpi: 300);
+        final pdfRaster = await rasters.first;
+
+        // Convert raster to PNG first to preserve colors, then flatten on white background
+        final pngBytes = await pdfRaster.toPng();
+        final imgImage = img.decodePng(pngBytes);
+
+        if (imgImage == null) {
+          throw Exception('Failed to decode PDF image for sharing');
+        }
+
+        final whiteBackground = img.Image(
+          width: imgImage.width,
+          height: imgImage.height,
+          format: img.Format.uint8,
+          numChannels: _rgbChannelCount,
+        );
+
+        img.fill(
+          whiteBackground,
+          color: img.ColorUint8.rgb(255, 255, 255),
+        );
+
+        // Note: compositeImage writes directly into whiteBackground to overlay the raster
+        img.compositeImage(
+          whiteBackground,
+          imgImage,
+          dstX: 0,
+          dstY: 0,
+        );
+
+        // Encode as JPEG with solid white background
+        final imageBytes = img.encodeJpg(whiteBackground);
+        
+        final tempDir = await getTemporaryDirectory();
+        file = File('${tempDir.path}/$filename');
+        await file.writeAsBytes(imageBytes);
+      } else {
+        // Save as PDF
+        final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
+        final tempDir = await getTemporaryDirectory();
+        file = File('${tempDir.path}/$filename');
+        await file.writeAsBytes(pdfBytes);
+      }
+      
+      // Format phone number for WhatsApp (remove + and spaces)
+      final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\+\-\(\)]'), '');
+      
+      // Construct WhatsApp URL with phone number
+      final whatsappUrl = 'https://wa.me/$cleanPhoneNumber?text=${Uri.encodeComponent(_whatsAppShareMessage)}';
+      final uri = Uri.parse(whatsappUrl);
+      
+      // Try to share directly to WhatsApp using URL scheme
+      // For Android and iOS, WhatsApp supports direct file sharing via app intent
+      // The share_plus package will handle this automatically when we specify the file
+      
+      if (Platform.isAndroid || Platform.isIOS) {
+        // Try to open WhatsApp first to navigate to the chat
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          
+          // Wait a moment for WhatsApp to open
+          await Future.delayed(const Duration(milliseconds: _whatsAppOpenDelayMs));
+        }
+        
+        // Then use share to send the file
+        // Note: The user will need to select WhatsApp from the share sheet and send the attachment
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: 'Ledger Statement',
+          text: _whatsAppShareMessage,
+        );
+      } else {
+        // For other platforms, use system share sheet
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: 'Ledger Statement',
+          text: _whatsAppShareMessage,
+        );
+      }
     } catch (e) {
       rethrow;
     }

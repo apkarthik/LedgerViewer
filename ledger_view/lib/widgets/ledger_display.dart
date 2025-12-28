@@ -6,6 +6,7 @@ import '../models/ledger_entry.dart';
 import '../providers/theme_provider.dart';
 import '../services/print_service.dart';
 import '../services/theme_service.dart';
+import '../services/storage_service.dart';
 import '../utils/voucher_type_mapper.dart';
 
 class LedgerDisplay extends StatelessWidget {
@@ -87,8 +88,10 @@ class LedgerDisplay extends StatelessWidget {
                   tooltip: 'Share Ledger',
                   color: Colors.white,
                   onSelected: (value) {
-                    if (value == 'whatsapp') {
-                      _shareViaWhatsApp(context);
+                    if (value == 'whatsapp_pdf') {
+                      _shareViaWhatsApp(context, asImage: false);
+                    } else if (value == 'whatsapp_image') {
+                      _shareViaWhatsApp(context, asImage: true);
                     } else {
                       _shareLedger(context, value == 'image');
                     }
@@ -115,12 +118,22 @@ class LedgerDisplay extends StatelessWidget {
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'whatsapp',
+                      value: 'whatsapp_pdf',
                       child: Row(
                         children: [
                           Icon(Icons.message, color: Colors.green),
                           SizedBox(width: 12),
-                          Text('Share via WhatsApp'),
+                          Text('WhatsApp (PDF)'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'whatsapp_image',
+                      child: Row(
+                        children: [
+                          Icon(Icons.message, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('WhatsApp (Image)'),
                         ],
                       ),
                     ),
@@ -210,9 +223,8 @@ class LedgerDisplay extends StatelessWidget {
     }
   }
 
-  Future<void> _shareViaWhatsApp(BuildContext context) async {
+  Future<void> _shareViaWhatsApp(BuildContext context, {required bool asImage}) async {
     // Show dialog to enter/confirm WhatsApp number
-    // Note: The number is used for user confirmation, actual sharing uses system share sheet
     final TextEditingController phoneController = TextEditingController(
       text: customerMobileNumber ?? '',
     );
@@ -236,10 +248,11 @@ class LedgerDisplay extends StatelessWidget {
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
                       labelText: 'Phone Number',
-                      hintText: '+91XXXXXXXXXX',
+                      hintText: '10-digit mobile number',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.phone),
                       errorText: errorText,
+                      helperText: 'Enter 10-digit number (country code will be added automatically)',
                     ),
                     onChanged: (value) {
                       if (errorText != null) {
@@ -251,7 +264,7 @@ class LedgerDisplay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Ledger PDF will be shared to this number via system share sheet',
+                    'WhatsApp will open and the ${asImage ? 'image' : 'PDF'} will be ready to send',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -265,7 +278,7 @@ class LedgerDisplay extends StatelessWidget {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final number = phoneController.text.trim();
                     if (number.isEmpty) {
                       setState(() {
@@ -276,7 +289,9 @@ class LedgerDisplay extends StatelessWidget {
                         errorText = 'Please enter a valid phone number';
                       });
                     } else {
-                      Navigator.of(dialogContext).pop(number);
+                      // Add country code prefix if not present
+                      final formattedNumber = await _formatPhoneNumberWithPrefix(number);
+                      Navigator.of(dialogContext).pop(formattedNumber);
                     }
                   },
                   child: const Text('Share'),
@@ -290,10 +305,40 @@ class LedgerDisplay extends StatelessWidget {
 
     if (phoneNumber != null && phoneNumber.isNotEmpty) {
       try {
-        // Generate PDF and share via WhatsApp
-        await PrintService.shareViaWhatsApp(result);
+        // Show loading indicator
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Preparing ${asImage ? 'image' : 'PDF'} for WhatsApp...'),
+                ],
+              ),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 30),
+            ),
+          );
+        }
+
+        // Generate and share via WhatsApp
+        await PrintService.shareViaWhatsApp(result, phoneNumber: phoneNumber, asImage: asImage);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        }
       } catch (e) {
         if (context.mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error sharing via WhatsApp: ${e.toString()}'),
@@ -303,6 +348,23 @@ class LedgerDisplay extends StatelessWidget {
         }
       }
     }
+  }
+
+  /// Format phone number with country code prefix if not present
+  Future<String> _formatPhoneNumberWithPrefix(String number) async {
+    // Remove common formatting characters
+    final cleaned = number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    
+    // If already has country code prefix, return as is
+    if (cleaned.startsWith('+')) {
+      return cleaned;
+    }
+    
+    // Get country code prefix from settings
+    final countryCodePrefix = await StorageService.getCountryCodePrefix();
+    
+    // Add prefix to the number
+    return '$countryCodePrefix$cleaned';
   }
 
   /// Basic phone number validation
