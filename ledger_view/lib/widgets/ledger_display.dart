@@ -9,6 +9,17 @@ import '../services/theme_service.dart';
 import '../services/storage_service.dart';
 import '../utils/voucher_type_mapper.dart';
 
+/// Result of share action selection dialog
+class ShareActionResult {
+  final bool isSmsSelected;
+  final String? phoneNumber;
+  
+  const ShareActionResult.sms() : isSmsSelected = true, phoneNumber = null;
+  const ShareActionResult.phoneNumber(this.phoneNumber) : isSmsSelected = false;
+  
+  bool get hasPhoneNumber => phoneNumber != null && phoneNumber!.isNotEmpty;
+}
+
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
   final String? customerMobileNumber;
@@ -224,13 +235,68 @@ class LedgerDisplay extends StatelessWidget {
   }
 
   Future<void> _shareViaWhatsApp(BuildContext context, {required bool asImage}) async {
+    // First check if WhatsApp is installed
+    final isWhatsAppAvailable = await PrintService.isWhatsAppInstalled();
+    
+    if (!isWhatsAppAvailable && context.mounted) {
+      // Show dialog informing user WhatsApp is not available with SMS fallback option
+      final shouldUseSMS = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            icon: const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.orange),
+            title: const Text('WhatsApp Not Available'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'WhatsApp is not installed or available on this device.',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Would you like to send the ledger summary via SMS instead?',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Note: SMS will only include summary details (balance, totals), not the full ${asImage ? 'image' : 'PDF'}.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                icon: const Icon(Icons.sms),
+                label: const Text('Send SMS'),
+              ),
+            ],
+          );
+        },
+      );
+      
+      if (shouldUseSMS == true && context.mounted) {
+        await _sendLedgerSMS(context);
+      }
+      return;
+    }
+    
     // Show dialog to enter/confirm WhatsApp number
     final TextEditingController phoneController = TextEditingController(
       text: customerMobileNumber ?? '',
     );
     String? errorText;
 
-    final String? phoneNumber = await showDialog<String>(
+    final ShareActionResult? actionResult = await showDialog<ShareActionResult>(
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
@@ -262,13 +328,62 @@ class LedgerDisplay extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'WhatsApp will open and the ${asImage ? 'image' : 'PDF'} will be ready to send',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
                     ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Important Instructions',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '1. WhatsApp will open with a share dialog\n'
+                          '2. Select the contact to send the ${asImage ? 'image' : 'PDF'}\n'
+                          '3. Make sure to attach the file before sending\n'
+                          '4. If you cancel without selecting a contact, the file won\'t be attached',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade700,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, size: 14, color: Colors.orange.shade700),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'If contact is not on WhatsApp, use SMS fallback option',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange.shade700,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -276,6 +391,16 @@ class LedgerDisplay extends StatelessWidget {
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancel'),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(const ShareActionResult.sms());
+                  },
+                  icon: const Icon(Icons.sms, size: 18),
+                  label: const Text('Send SMS'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.orange.shade700,
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -291,7 +416,7 @@ class LedgerDisplay extends StatelessWidget {
                     } else {
                       // Add country code prefix if not present
                       final formattedNumber = await _formatPhoneNumberWithPrefix(number);
-                      Navigator.of(dialogContext).pop(formattedNumber);
+                      Navigator.of(dialogContext).pop(ShareActionResult.phoneNumber(formattedNumber));
                     }
                   },
                   child: const Text('Share'),
@@ -303,7 +428,22 @@ class LedgerDisplay extends StatelessWidget {
       },
     );
 
-    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+    if (actionResult != null) {
+      // Check if user chose SMS fallback
+      if (actionResult.isSmsSelected) {
+        if (context.mounted) {
+          await _sendLedgerSMS(context);
+        }
+        return;
+      }
+      
+      // Validate phone number is present
+      if (!actionResult.hasPhoneNumber) {
+        return;
+      }
+      
+      final phoneNumber = actionResult.phoneNumber!;
+      
       try {
         // Show loading indicator
         if (context.mounted) {
@@ -331,17 +471,210 @@ class LedgerDisplay extends StatelessWidget {
         }
 
         // Generate and share via WhatsApp
-        await PrintService.shareViaWhatsApp(result, phoneNumber: phoneNumber, asImage: asImage);
+        final success = await PrintService.shareViaWhatsApp(result, phoneNumber: phoneNumber, asImage: asImage);
         
         if (context.mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          
+          if (success) {
+            // Show success message with reminder
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Opening WhatsApp...',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Remember to select the contact and send the attachment!',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green.shade600,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'OK',
+                  textColor: Colors.white,
+                  onPressed: () {},
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          
+          // Show error with SMS fallback option
+          final shouldRetryWithSMS = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                icon: const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                title: const Text('WhatsApp Share Failed'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Error: ${e.toString()}'),
+                    const SizedBox(height: 16),
+                    const Text('Would you like to send a summary via SMS instead?'),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    icon: const Icon(Icons.sms),
+                    label: const Text('Send SMS'),
+                  ),
+                ],
+              );
+            },
+          );
+          
+          if (shouldRetryWithSMS == true && context.mounted) {
+            await _sendLedgerSMS(context);
+          }
+        }
+      }
+    }
+  }
+
+  /// Send ledger summary via SMS as fallback
+  Future<void> _sendLedgerSMS(BuildContext context) async {
+    final TextEditingController phoneController = TextEditingController(
+      text: customerMobileNumber ?? '',
+    );
+    String? errorText;
+
+    final String? phoneNumber = await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Send SMS Summary'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Enter the recipient\'s mobile number:'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      hintText: '10-digit mobile number',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.phone),
+                      errorText: errorText,
+                      helperText: 'Enter 10-digit number (country code will be added automatically)',
+                    ),
+                    onChanged: (value) {
+                      if (errorText != null) {
+                        setState(() {
+                          errorText = null;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'SMS will contain ledger summary (balance, totals, entry count)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final number = phoneController.text.trim();
+                    if (number.isEmpty) {
+                      setState(() {
+                        errorText = 'Please enter a phone number';
+                      });
+                    } else if (!_isValidPhoneNumber(number)) {
+                      setState(() {
+                        errorText = 'Please enter a valid phone number';
+                      });
+                    } else {
+                      // Add country code prefix if not present
+                      final formattedNumber = await _formatPhoneNumberWithPrefix(number);
+                      Navigator.of(dialogContext).pop(formattedNumber);
+                    }
+                  },
+                  child: const Text('Send SMS'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (phoneNumber != null && phoneNumber.isNotEmpty && context.mounted) {
+      try {
+        // Show loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Opening SMS app...'),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        // Send SMS
+        await PrintService.sendLedgerSMS(result, phoneNumber: phoneNumber);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('SMS app opened with ledger summary'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error sharing via WhatsApp: ${e.toString()}'),
+              content: Text('Error sending SMS: ${e.toString()}'),
               backgroundColor: Colors.red.shade600,
             ),
           );
