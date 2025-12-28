@@ -1,24 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/ledger_entry.dart';
 import '../providers/theme_provider.dart';
 import '../services/print_service.dart';
 import '../services/theme_service.dart';
 import '../services/storage_service.dart';
 import '../utils/voucher_type_mapper.dart';
-
-/// Result of share action selection dialog
-class ShareActionResult {
-  final bool isSmsSelected;
-  final String? phoneNumber;
-  
-  const ShareActionResult.sms() : isSmsSelected = true, phoneNumber = null;
-  const ShareActionResult.phoneNumber(this.phoneNumber) : isSmsSelected = false;
-  
-  bool get hasPhoneNumber => phoneNumber != null && phoneNumber!.isNotEmpty;
-}
 
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
@@ -234,69 +222,57 @@ class LedgerDisplay extends StatelessWidget {
     }
   }
 
+  /// Format phone number with country code prefix
+  /// Returns the formatted phone number with country code prefix
+  Future<String> _getFormattedPhoneNumber(String countryCodePrefix, {String? prefillNumber}) async {
+    if (prefillNumber != null && prefillNumber.isNotEmpty) {
+      // Use the prefilled phone number (already formatted)
+      return prefillNumber;
+    }
+    if (customerMobileNumber != null && customerMobileNumber!.isNotEmpty) {
+      // If customer has a mobile number, use it with prefix
+      final cleanNumber = customerMobileNumber!.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+      if (cleanNumber.startsWith('+')) {
+        return cleanNumber;
+      } else {
+        return '$countryCodePrefix$cleanNumber';
+      }
+    }
+    // Show just the prefix so user can enter the number
+    return countryCodePrefix;
+  }
+
+  /// Create a phone controller with cursor positioned correctly
+  TextEditingController _createPhoneController(String initialPhoneNumber, String countryCodePrefix, {String? prefillNumber}) {
+    final controller = TextEditingController(text: initialPhoneNumber);
+    // Set cursor position after prefix if no customer/prefill number
+    final hasExistingNumber = (prefillNumber != null && prefillNumber.isNotEmpty) ||
+        (customerMobileNumber != null && customerMobileNumber!.isNotEmpty);
+    if (!hasExistingNumber) {
+      controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: initialPhoneNumber.length),
+      );
+    }
+    return controller;
+  }
+
   Future<void> _shareViaWhatsApp(BuildContext context, {required bool asImage}) async {
     // First check if WhatsApp is installed
     final isWhatsAppAvailable = await PrintService.isWhatsAppInstalled();
     
     if (!isWhatsAppAvailable && context.mounted) {
-      // Show dialog informing user WhatsApp is not available with SMS fallback option
-      final shouldUseSMS = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          return AlertDialog(
-            icon: const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.orange),
-            title: const Text('WhatsApp Not Available'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'WhatsApp is not installed or available on this device.',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Would you like to send the ledger summary via SMS instead?',
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Note: SMS will only include summary details (balance, totals), not the full ${asImage ? 'image' : 'PDF'}.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                icon: const Icon(Icons.sms),
-                label: const Text('Send SMS'),
-              ),
-            ],
-          );
-        },
-      );
-      
-      if (shouldUseSMS == true && context.mounted) {
-        await _sendLedgerSMS(context);
-      }
+      // WhatsApp not available, automatically fall back to SMS
+      await _sendLedgerSMS(context);
       return;
     }
     
-    // Show dialog to enter/confirm WhatsApp number
-    final TextEditingController phoneController = TextEditingController(
-      text: customerMobileNumber ?? '',
-    );
+    // Get country code prefix for pre-populating the phone field
+    final countryCodePrefix = await StorageService.getCountryCodePrefix();
+    final initialPhoneNumber = await _getFormattedPhoneNumber(countryCodePrefix);
+    final phoneController = _createPhoneController(initialPhoneNumber, countryCodePrefix);
     String? errorText;
 
-    final ShareActionResult? actionResult = await showDialog<ShareActionResult>(
+    final String? phoneNumber = await showDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
@@ -307,18 +283,18 @@ class LedgerDisplay extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Confirm the recipient\'s WhatsApp number:'),
+                  const Text('Enter the recipient\'s WhatsApp number:'),
                   const SizedBox(height: 12),
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
+                    autofocus: true,
                     decoration: InputDecoration(
                       labelText: 'Phone Number',
-                      hintText: '10-digit mobile number',
+                      hintText: '${countryCodePrefix}XXXXXXXXXX',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.phone),
                       errorText: errorText,
-                      helperText: 'Enter 10-digit number (country code will be added automatically)',
                     ),
                     onChanged: (value) {
                       if (errorText != null) {
@@ -328,63 +304,6 @@ class LedgerDisplay extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Important Instructions',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '1. WhatsApp will open with a share dialog\n'
-                          '2. Select the contact to send the ${asImage ? 'image' : 'PDF'}\n'
-                          '3. Make sure to attach the file before sending\n'
-                          '4. If you cancel without selecting a contact, the file won\'t be attached',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade700,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded, size: 14, color: Colors.orange.shade700),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          'If contact is not on WhatsApp, use SMS fallback option',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.orange.shade700,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
               actions: [
@@ -392,20 +311,10 @@ class LedgerDisplay extends StatelessWidget {
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancel'),
                 ),
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop(const ShareActionResult.sms());
-                  },
-                  icon: const Icon(Icons.sms, size: 18),
-                  label: const Text('Send SMS'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.orange.shade700,
-                  ),
-                ),
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
                     final number = phoneController.text.trim();
-                    if (number.isEmpty) {
+                    if (number.isEmpty || number == countryCodePrefix) {
                       setState(() {
                         errorText = 'Please enter a phone number';
                       });
@@ -414,9 +323,7 @@ class LedgerDisplay extends StatelessWidget {
                         errorText = 'Please enter a valid phone number';
                       });
                     } else {
-                      // Add country code prefix if not present
-                      final formattedNumber = await _formatPhoneNumberWithPrefix(number);
-                      Navigator.of(dialogContext).pop(ShareActionResult.phoneNumber(formattedNumber));
+                      Navigator.of(dialogContext).pop(number);
                     }
                   },
                   child: const Text('Share'),
@@ -428,133 +335,78 @@ class LedgerDisplay extends StatelessWidget {
       },
     );
 
-    if (actionResult != null) {
-      // Check if user chose SMS fallback
-      if (actionResult.isSmsSelected) {
-        if (context.mounted) {
-          await _sendLedgerSMS(context);
-        }
-        return;
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      return;
+    }
+    
+    try {
+      // Show loading indicator
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text('Preparing ${asImage ? 'image' : 'PDF'} for WhatsApp...'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 30),
+          ),
+        );
       }
+
+      // Generate and share via WhatsApp
+      final success = await PrintService.shareViaWhatsApp(result, phoneNumber: phoneNumber, asImage: asImage);
       
-      // Validate phone number is present
-      if (!actionResult.hasPhoneNumber) {
-        return;
-      }
-      
-      final phoneNumber = actionResult.phoneNumber!;
-      
-      try {
-        // Show loading indicator
-        if (context.mounted) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        
+        if (success) {
+          // Show brief success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
-                children: [
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text('Preparing ${asImage ? 'image' : 'PDF'} for WhatsApp...'),
-                ],
-              ),
+              content: const Text('Opening WhatsApp...'),
               backgroundColor: Colors.green.shade600,
               behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 30),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
-
-        // Generate and share via WhatsApp
-        final success = await PrintService.shareViaWhatsApp(result, phoneNumber: phoneNumber, asImage: asImage);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          
-          if (success) {
-            // Show success message with reminder
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Opening WhatsApp...',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Remember to select the contact and send the attachment!',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.green.shade600,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 5),
-                action: SnackBarAction(
-                  label: 'OK',
-                  textColor: Colors.white,
-                  onPressed: () {},
-                ),
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          
-          // Show error with SMS fallback option
-          final shouldRetryWithSMS = await showDialog<bool>(
-            context: context,
-            builder: (BuildContext dialogContext) {
-              return AlertDialog(
-                icon: const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                title: const Text('WhatsApp Share Failed'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Error: ${e.toString()}'),
-                    const SizedBox(height: 16),
-                    const Text('Would you like to send a summary via SMS instead?'),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(false),
-                    child: const Text('Cancel'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.of(dialogContext).pop(true),
-                    icon: const Icon(Icons.sms),
-                    label: const Text('Send SMS'),
-                  ),
-                ],
-              );
-            },
-          );
-          
-          if (shouldRetryWithSMS == true && context.mounted) {
-            await _sendLedgerSMS(context);
-          }
-        }
+        // On error, automatically fall back to SMS
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('WhatsApp share failed. Opening SMS...'),
+            backgroundColor: Colors.orange.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        await _sendLedgerSMS(context, prefillPhoneNumber: phoneNumber);
       }
     }
   }
 
   /// Send ledger summary via SMS as fallback
-  Future<void> _sendLedgerSMS(BuildContext context) async {
-    final TextEditingController phoneController = TextEditingController(
-      text: customerMobileNumber ?? '',
-    );
+  Future<void> _sendLedgerSMS(BuildContext context, {String? prefillPhoneNumber}) async {
+    // Get country code prefix for pre-populating the phone field
+    final countryCodePrefix = await StorageService.getCountryCodePrefix();
+    final initialPhoneNumber = await _getFormattedPhoneNumber(countryCodePrefix, prefillNumber: prefillPhoneNumber);
+    final phoneController = _createPhoneController(initialPhoneNumber, countryCodePrefix, prefillNumber: prefillPhoneNumber);
     String? errorText;
 
     final String? phoneNumber = await showDialog<String>(
@@ -573,13 +425,13 @@ class LedgerDisplay extends StatelessWidget {
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
+                    autofocus: true,
                     decoration: InputDecoration(
                       labelText: 'Phone Number',
-                      hintText: '10-digit mobile number',
+                      hintText: '${countryCodePrefix}XXXXXXXXXX',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.phone),
                       errorText: errorText,
-                      helperText: 'Enter 10-digit number (country code will be added automatically)',
                     ),
                     onChanged: (value) {
                       if (errorText != null) {
@@ -589,15 +441,6 @@ class LedgerDisplay extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'SMS will contain ledger summary (balance, totals, entry count)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
                 ],
               ),
               actions: [
@@ -606,9 +449,9 @@ class LedgerDisplay extends StatelessWidget {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
                     final number = phoneController.text.trim();
-                    if (number.isEmpty) {
+                    if (number.isEmpty || number == countryCodePrefix) {
                       setState(() {
                         errorText = 'Please enter a phone number';
                       });
@@ -617,9 +460,7 @@ class LedgerDisplay extends StatelessWidget {
                         errorText = 'Please enter a valid phone number';
                       });
                     } else {
-                      // Add country code prefix if not present
-                      final formattedNumber = await _formatPhoneNumberWithPrefix(number);
-                      Navigator.of(dialogContext).pop(formattedNumber);
+                      Navigator.of(dialogContext).pop(number);
                     }
                   },
                   child: const Text('Send SMS'),
@@ -681,23 +522,6 @@ class LedgerDisplay extends StatelessWidget {
         }
       }
     }
-  }
-
-  /// Format phone number with country code prefix if not present
-  Future<String> _formatPhoneNumberWithPrefix(String number) async {
-    // Remove common formatting characters
-    final cleaned = number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-    
-    // If already has country code prefix, return as is
-    if (cleaned.startsWith('+')) {
-      return cleaned;
-    }
-    
-    // Get country code prefix from settings
-    final countryCodePrefix = await StorageService.getCountryCodePrefix();
-    
-    // Add prefix to the number
-    return '$countryCodePrefix$cleaned';
   }
 
   /// Basic phone number validation

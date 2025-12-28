@@ -33,7 +33,6 @@ class PrintService {
   static const int _rgbChannelCount = 3;
   
   // WhatsApp sharing constants
-  static const int _whatsAppOpenDelayMs = 500;
   static const String _whatsAppShareMessage = 'Please find your ledger statement attached.';
 
   static Future<void> printLedger(LedgerResult result) async {
@@ -385,9 +384,10 @@ Entry Count: ${result.entries.length}''';
     }
   }
 
-  /// Share ledger via WhatsApp with improved error handling
+  /// Share ledger via system share sheet for WhatsApp sharing
   /// Returns true if share was initiated successfully, false otherwise
-  /// Opens WhatsApp directly with the specified phone number
+  /// Note: phoneNumber parameter is kept for validation in the caller but not used here
+  /// as Android share intents don't support direct contact targeting
   static Future<bool> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
     try {
       final pdf = await _generateLedgerPdf(result);
@@ -448,41 +448,12 @@ Entry Count: ${result.entries.length}''';
         await file.writeAsBytes(pdfBytes);
       }
       
-      // Format phone number for WhatsApp (remove + and spaces)
-      final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\+\-\(\)]'), '');
-      
-      // Construct WhatsApp URL with phone number
-      final whatsappUrl = 'https://wa.me/$cleanPhoneNumber?text=${Uri.encodeComponent(_whatsAppShareMessage)}';
-      final uri = Uri.parse(whatsappUrl);
-      
-      // Try to share directly to WhatsApp using URL scheme
-      // For Android and iOS, WhatsApp supports direct file sharing via app intent
-      // The share_plus package will handle this automatically when we specify the file
-      
-      if (Platform.isAndroid || Platform.isIOS) {
-        // Try to open WhatsApp first to navigate to the chat
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          
-          // Wait a moment for WhatsApp to open
-          await Future.delayed(const Duration(milliseconds: _whatsAppOpenDelayMs));
-        }
-        
-        // Then use share to send the file
-        // Note: The user will need to select WhatsApp from the share sheet and send the attachment
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'Ledger Statement',
-          text: _whatsAppShareMessage,
-        );
-      } else {
-        // For other platforms, use system share sheet
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'Ledger Statement',
-          text: _whatsAppShareMessage,
-        );
-      }
+      // Share file via system share sheet
+      // User will select WhatsApp from the share options
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: _whatsAppShareMessage,
+      );
       
       return true; // Share was initiated successfully
     } catch (e) {
