@@ -88,8 +88,10 @@ class LedgerDisplay extends StatelessWidget {
                   tooltip: 'Share Ledger',
                   color: Colors.white,
                   onSelected: (value) {
-                    if (value == 'whatsapp') {
-                      _shareViaWhatsApp(context);
+                    if (value == 'whatsapp_pdf') {
+                      _shareViaWhatsApp(context, asImage: false);
+                    } else if (value == 'whatsapp_image') {
+                      _shareViaWhatsApp(context, asImage: true);
                     } else {
                       _shareLedger(context, value == 'image');
                     }
@@ -116,12 +118,22 @@ class LedgerDisplay extends StatelessWidget {
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'whatsapp',
+                      value: 'whatsapp_pdf',
                       child: Row(
                         children: [
                           Icon(Icons.message, color: Colors.green),
                           SizedBox(width: 12),
-                          Text('Share via WhatsApp'),
+                          Text('WhatsApp (PDF)'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'whatsapp_image',
+                      child: Row(
+                        children: [
+                          Icon(Icons.message, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('WhatsApp (Image)'),
                         ],
                       ),
                     ),
@@ -211,7 +223,7 @@ class LedgerDisplay extends StatelessWidget {
     }
   }
 
-  Future<void> _shareViaWhatsApp(BuildContext context) async {
+  Future<void> _shareViaWhatsApp(BuildContext context, {required bool asImage}) async {
     // Show dialog to enter/confirm WhatsApp number
     final TextEditingController phoneController = TextEditingController(
       text: customerMobileNumber ?? '',
@@ -252,7 +264,7 @@ class LedgerDisplay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Ledger PDF will be shared directly to WhatsApp',
+                    'Ledger ${asImage ? 'image' : 'PDF'} will be shared directly to WhatsApp',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -297,9 +309,9 @@ class LedgerDisplay extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
@@ -307,8 +319,8 @@ class LedgerDisplay extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Text('Preparing PDF for WhatsApp...'),
+                  const SizedBox(width: 12),
+                  Text('Preparing ${asImage ? 'image' : 'PDF'} for WhatsApp...'),
                 ],
               ),
               backgroundColor: Colors.green.shade600,
@@ -318,8 +330,8 @@ class LedgerDisplay extends StatelessWidget {
           );
         }
 
-        // Generate PDF and share via WhatsApp
-        await PrintService.shareViaWhatsApp(result, phoneNumber: phoneNumber);
+        // Generate and share via WhatsApp
+        await PrintService.shareViaWhatsApp(result, phoneNumber: phoneNumber, asImage: asImage);
         
         if (context.mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();

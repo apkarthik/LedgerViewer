@@ -328,19 +328,65 @@ class PrintService {
 
   /// Share ledger via WhatsApp
   /// Opens WhatsApp directly with the specified phone number
-  static Future<void> shareViaWhatsApp(LedgerResult result, {required String phoneNumber}) async {
+  static Future<void> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
       
       final customerIdClean = _extractCleanCustomerId(result.customerName);
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
       
-      // Save PDF to temp directory
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/$filename');
-      await file.writeAsBytes(pdfBytes);
+      File file;
+      
+      if (asImage) {
+        // Convert PDF to image
+        final filename = 'Ledger_${customerIdClean}_$timestamp.jpg';
+        
+        // Convert PDF to image using printing package with proper DPI for quality
+        final rasters = await Printing.raster(pdfBytes, dpi: 300);
+        final pdfRaster = await rasters.first;
+
+        // Convert raster to PNG first to preserve colors, then flatten on white background
+        final pngBytes = await pdfRaster.toPng();
+        final imgImage = img.decodePng(pngBytes);
+
+        if (imgImage == null) {
+          throw Exception('Failed to decode PDF image for sharing');
+        }
+
+        final whiteBackground = img.Image(
+          width: imgImage.width,
+          height: imgImage.height,
+          format: img.Format.uint8,
+          numChannels: _rgbChannelCount,
+        );
+
+        img.fill(
+          whiteBackground,
+          color: img.ColorUint8.rgb(255, 255, 255),
+        );
+
+        // Note: compositeImage writes directly into whiteBackground to overlay the raster
+        img.compositeImage(
+          whiteBackground,
+          imgImage,
+          dstX: 0,
+          dstY: 0,
+        );
+
+        // Encode as JPEG with solid white background
+        final imageBytes = img.encodeJpg(whiteBackground);
+        
+        final tempDir = await getTemporaryDirectory();
+        file = File('${tempDir.path}/$filename');
+        await file.writeAsBytes(imageBytes);
+      } else {
+        // Save as PDF
+        final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
+        final tempDir = await getTemporaryDirectory();
+        file = File('${tempDir.path}/$filename');
+        await file.writeAsBytes(pdfBytes);
+      }
       
       // Format phone number for WhatsApp (remove + and spaces)
       final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\+\-\(\)]'), '');
