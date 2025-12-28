@@ -212,6 +212,7 @@ class LedgerDisplay extends StatelessWidget {
 
   Future<void> _shareViaWhatsApp(BuildContext context) async {
     // Show dialog to enter/confirm WhatsApp number
+    // Note: The number is used for user confirmation, actual sharing uses system share sheet
     final TextEditingController phoneController = TextEditingController(
       text: customerMobileNumber ?? '',
     );
@@ -228,7 +229,7 @@ class LedgerDisplay extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Enter the WhatsApp number (with country code):'),
+                  const Text('Confirm the recipient\'s WhatsApp number:'),
                   const SizedBox(height: 12),
                   TextField(
                     controller: phoneController,
@@ -250,7 +251,7 @@ class LedgerDisplay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Ledger will be shared as PDF to this number',
+                    'Ledger PDF will be shared to this number via system share sheet',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -290,7 +291,7 @@ class LedgerDisplay extends StatelessWidget {
     if (phoneNumber != null && phoneNumber.isNotEmpty) {
       try {
         // Generate PDF and share via WhatsApp
-        await PrintService.shareViaWhatsApp(result, phoneNumber);
+        await PrintService.shareViaWhatsApp(result);
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

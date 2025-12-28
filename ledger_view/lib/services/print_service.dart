@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -328,9 +327,7 @@ class PrintService {
 
   /// Share ledger via WhatsApp
   /// Opens system share sheet for WhatsApp sharing
-  /// [phoneNumber] parameter is currently unused but kept for potential future
-  /// WhatsApp API integration if direct contact selection becomes available
-  static Future<void> shareViaWhatsApp(LedgerResult result, [String? phoneNumber]) async {
+  static Future<void> shareViaWhatsApp(LedgerResult result) async {
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
