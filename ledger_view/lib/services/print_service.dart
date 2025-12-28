@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -324,6 +325,61 @@ class PrintService {
         // Share as PDF
         final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
         await _sharePdfFile(pdfBytes, 'Balance_Analysis_$timestamp.pdf');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Share ledger via WhatsApp to a specific phone number
+  static Future<void> shareViaWhatsApp(LedgerResult result, String phoneNumber) async {
+    try {
+      final pdf = await _generateLedgerPdf(result);
+      final pdfBytes = await pdf.save();
+      
+      // Create meaningful filename
+      final customerParts = result.customerName.split('.');
+      final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
+          ? customerParts[0] 
+          : result.customerName)
+          .replaceAll(RegExp(r'[^\w\s-]'), '');
+      
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
+      
+      // Save PDF to temp directory
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$filename');
+      await file.writeAsBytes(pdfBytes);
+      
+      // Clean phone number (remove spaces, dashes, etc.)
+      String cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+      
+      // Add country code if not present (assuming India +91)
+      if (!cleanPhone.startsWith('+')) {
+        if (!cleanPhone.startsWith('91') && cleanPhone.length == 10) {
+          cleanPhone = '91$cleanPhone';
+        }
+      }
+      
+      // Encode the message
+      final message = Uri.encodeComponent('Please find your ledger statement attached.');
+      
+      // Create WhatsApp URL with file
+      // Using whatsapp://send works better on mobile devices
+      final Uri whatsappUri = Uri.parse('whatsapp://send?phone=$cleanPhone&text=$message');
+      
+      // Try to launch WhatsApp with the message
+      // Note: File sharing via URL doesn't work directly, so we'll share via Share API with text
+      if (await canLaunchUrl(whatsappUri)) {
+        // Share file first via Share API
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: 'Ledger Statement',
+          text: 'Please find your ledger statement attached.',
+        );
+      } else {
+        throw Exception('WhatsApp is not installed on this device');
       }
     } catch (e) {
       rethrow;

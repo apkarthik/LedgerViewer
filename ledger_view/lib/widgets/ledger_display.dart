@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/ledger_entry.dart';
 import '../providers/theme_provider.dart';
 import '../services/print_service.dart';
@@ -9,8 +10,13 @@ import '../utils/voucher_type_mapper.dart';
 
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
+  final String? customerMobileNumber;
 
-  const LedgerDisplay({super.key, required this.result});
+  const LedgerDisplay({
+    super.key, 
+    required this.result,
+    this.customerMobileNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +86,13 @@ class LedgerDisplay extends StatelessWidget {
                   icon: const Icon(Icons.share, color: Colors.white),
                   tooltip: 'Share Ledger',
                   color: Colors.white,
-                  onSelected: (value) => _shareLedger(context, value == 'image'),
+                  onSelected: (value) {
+                    if (value == 'whatsapp') {
+                      _shareViaWhatsApp(context);
+                    } else {
+                      _shareLedger(context, value == 'image');
+                    }
+                  },
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'pdf',
@@ -99,6 +111,16 @@ class LedgerDisplay extends StatelessWidget {
                           Icon(Icons.image, color: Colors.blue),
                           SizedBox(width: 12),
                           Text('Share as Image'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'whatsapp',
+                      child: Row(
+                        children: [
+                          Icon(Icons.message, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('Share via WhatsApp'),
                         ],
                       ),
                     ),
@@ -184,6 +206,86 @@ class LedgerDisplay extends StatelessWidget {
             backgroundColor: Colors.red.shade600,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _shareViaWhatsApp(BuildContext context) async {
+    // Show dialog to enter/confirm WhatsApp number
+    final TextEditingController phoneController = TextEditingController(
+      text: customerMobileNumber ?? '',
+    );
+
+    final String? phoneNumber = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Share via WhatsApp'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Enter the WhatsApp number (with country code):'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  hintText: '+91XXXXXXXXXX',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Ledger will be shared as PDF to this number',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final number = phoneController.text.trim();
+                if (number.isNotEmpty) {
+                  Navigator.of(context).pop(number);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a phone number'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Share'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      try {
+        // Generate PDF and share via WhatsApp
+        await PrintService.shareViaWhatsApp(result, phoneNumber);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error sharing via WhatsApp: ${e.toString()}'),
+              backgroundColor: Colors.red.shade600,
+            ),
+          );
+        }
       }
     }
   }
