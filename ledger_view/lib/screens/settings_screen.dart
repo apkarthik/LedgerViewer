@@ -21,6 +21,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _countryCodePrefixController = TextEditingController();
   bool _isSaving = false;
   bool _hasChanges = false;
+  
+  // Country code validation regex - must start with + followed by 1-4 digits
+  static final RegExp _countryCodeRegex = RegExp(r'^\+\d{1,4}$');
 
   @override
   void initState() {
@@ -62,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // Validate country code prefix
-    if (countryCodePrefix.isEmpty || !RegExp(r'^\+\d{1,4}$').hasMatch(countryCodePrefix)) {
+    if (countryCodePrefix.isEmpty || !_countryCodeRegex.hasMatch(countryCodePrefix)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

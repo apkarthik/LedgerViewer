@@ -264,7 +264,7 @@ class LedgerDisplay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Ledger ${asImage ? 'image' : 'PDF'} will be shared directly to WhatsApp',
+                    'WhatsApp will open and the ${asImage ? 'image' : 'PDF'} will be ready to send',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,

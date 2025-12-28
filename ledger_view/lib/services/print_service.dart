@@ -31,6 +31,10 @@ class PrintService {
   static const double debitWidth = 42.0;
   static const double creditWidth = 42.0;
   static const int _rgbChannelCount = 3;
+  
+  // WhatsApp sharing constants
+  static const int _whatsAppOpenDelayMs = 500;
+  static const String _whatsAppShareMessage = 'Please find your ledger statement attached.';
 
   static Future<void> printLedger(LedgerResult result) async {
     final pdf = await _generateLedgerPdf(result);
@@ -391,55 +395,36 @@ class PrintService {
       // Format phone number for WhatsApp (remove + and spaces)
       final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\+\-\(\)]'), '');
       
+      // Construct WhatsApp URL with phone number
+      final whatsappUrl = 'https://wa.me/$cleanPhoneNumber?text=${Uri.encodeComponent(_whatsAppShareMessage)}';
+      final uri = Uri.parse(whatsappUrl);
+      
       // Try to share directly to WhatsApp using URL scheme
       // For Android and iOS, WhatsApp supports direct file sharing via app intent
-      // If that fails, fall back to system share sheet
+      // The share_plus package will handle this automatically when we specify the file
       
-      if (Platform.isAndroid) {
-        // On Android, use WhatsApp's package name with ACTION_SEND
-        // The share_plus package will handle this automatically when we specify the file
-        // We'll try using url_launcher first for direct WhatsApp opening
-        
-        // Construct WhatsApp URL with phone number
-        final whatsappUrl = 'https://wa.me/$cleanPhoneNumber?text=${Uri.encodeComponent('Please find your ledger statement attached.')}';
-        final uri = Uri.parse(whatsappUrl);
-        
+      if (Platform.isAndroid || Platform.isIOS) {
         // Try to open WhatsApp first to navigate to the chat
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
           
           // Wait a moment for WhatsApp to open
-          await Future.delayed(const Duration(milliseconds: 500));
+          await Future.delayed(const Duration(milliseconds: _whatsAppOpenDelayMs));
         }
         
         // Then use share to send the file
-        // The user will need to manually send after attaching
+        // Note: The user will need to select WhatsApp from the share sheet and send the attachment
         await Share.shareXFiles(
           [XFile(file.path)],
           subject: 'Ledger Statement',
-          text: 'Please find your ledger statement attached.',
-        );
-      } else if (Platform.isIOS) {
-        // On iOS, similar approach
-        final whatsappUrl = 'https://wa.me/$cleanPhoneNumber?text=${Uri.encodeComponent('Please find your ledger statement attached.')}';
-        final uri = Uri.parse(whatsappUrl);
-        
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          await Future.delayed(const Duration(milliseconds: 500));
-        }
-        
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'Ledger Statement',
-          text: 'Please find your ledger statement attached.',
+          text: _whatsAppShareMessage,
         );
       } else {
         // For other platforms, use system share sheet
         await Share.shareXFiles(
           [XFile(file.path)],
           subject: 'Ledger Statement',
-          text: 'Please find your ledger statement attached.',
+          text: _whatsAppShareMessage,
         );
       }
     } catch (e) {
