@@ -330,9 +330,66 @@ class PrintService {
     }
   }
 
-  /// Share ledger via WhatsApp
+  /// Check if WhatsApp is installed on the device
+  static Future<bool> isWhatsAppInstalled() async {
+    try {
+      // Try to check if WhatsApp can be launched
+      final whatsappUrl = Uri.parse('https://wa.me/');
+      return await canLaunchUrl(whatsappUrl);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Send SMS with ledger summary as fallback
+  static Future<void> sendLedgerSMS(LedgerResult result, {required String phoneNumber}) async {
+    try {
+      // Calculate totals
+      double totalDebit = 0;
+      double totalCredit = 0;
+      
+      for (var entry in result.entries) {
+        totalDebit += entry.debit;
+        totalCredit += entry.credit;
+      }
+      
+      final balance = totalCredit - totalDebit;
+      final balanceText = balance >= 0 
+          ? 'Balance: ₹${balance.toStringAsFixed(2)} (Credit)'
+          : 'Balance: ₹${(-balance).toStringAsFixed(2)} (Debit)';
+      
+      // Create SMS message with ledger summary
+      final message = '''Ledger Statement for ${result.customerName}
+Period: ${result.dateRange}
+Total Debit: ₹${totalDebit.toStringAsFixed(2)}
+Total Credit: ₹${totalCredit.toStringAsFixed(2)}
+$balanceText
+Entry Count: ${result.entries.length}''';
+      
+      // Format phone number for SMS (remove + and spaces)
+      final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\+\-\(\)]'), '');
+      
+      // Construct SMS URL
+      final smsUrl = Platform.isAndroid
+          ? 'sms:$cleanPhoneNumber?body=${Uri.encodeComponent(message)}'
+          : 'sms:$cleanPhoneNumber&body=${Uri.encodeComponent(message)}';
+      
+      final uri = Uri.parse(smsUrl);
+      
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        throw Exception('Could not launch SMS app');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Share ledger via WhatsApp with improved error handling
+  /// Returns true if share was initiated successfully, false otherwise
   /// Opens WhatsApp directly with the specified phone number
-  static Future<void> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
+  static Future<bool> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
@@ -427,6 +484,8 @@ class PrintService {
           text: _whatsAppShareMessage,
         );
       }
+      
+      return true; // Share was initiated successfully
     } catch (e) {
       rethrow;
     }
