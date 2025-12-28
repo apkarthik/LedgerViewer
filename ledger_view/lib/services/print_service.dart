@@ -384,13 +384,11 @@ Entry Count: ${result.entries.length}''';
     }
   }
 
-  /// Share ledger via WhatsApp with direct file attachment
+  /// Share ledger via system share sheet for WhatsApp sharing
   /// Returns true if share was initiated successfully, false otherwise
-  /// Opens system share sheet with the file attached for sharing to WhatsApp
-  /// Note: phoneNumber is collected for potential future use with WhatsApp Business API
+  /// Note: phoneNumber parameter is kept for validation in the caller but not used here
+  /// as Android share intents don't support direct contact targeting
   static Future<bool> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
-    // phoneNumber is collected but Android share intent doesn't support direct WhatsApp targeting
-    // User will select the contact from the share sheet
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();

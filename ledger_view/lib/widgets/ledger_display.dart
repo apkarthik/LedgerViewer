@@ -222,6 +222,40 @@ class LedgerDisplay extends StatelessWidget {
     }
   }
 
+  /// Format phone number with country code prefix
+  /// Returns the formatted phone number with country code prefix
+  Future<String> _getFormattedPhoneNumber(String countryCodePrefix, {String? prefillNumber}) async {
+    if (prefillNumber != null && prefillNumber.isNotEmpty) {
+      // Use the prefilled phone number (already formatted)
+      return prefillNumber;
+    }
+    if (customerMobileNumber != null && customerMobileNumber!.isNotEmpty) {
+      // If customer has a mobile number, use it with prefix
+      final cleanNumber = customerMobileNumber!.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+      if (cleanNumber.startsWith('+')) {
+        return cleanNumber;
+      } else {
+        return '$countryCodePrefix$cleanNumber';
+      }
+    }
+    // Show just the prefix so user can enter the number
+    return countryCodePrefix;
+  }
+
+  /// Create a phone controller with cursor positioned correctly
+  TextEditingController _createPhoneController(String initialPhoneNumber, String countryCodePrefix, {String? prefillNumber}) {
+    final controller = TextEditingController(text: initialPhoneNumber);
+    // Set cursor position after prefix if no customer/prefill number
+    final hasExistingNumber = (prefillNumber != null && prefillNumber.isNotEmpty) ||
+        (customerMobileNumber != null && customerMobileNumber!.isNotEmpty);
+    if (!hasExistingNumber) {
+      controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: initialPhoneNumber.length),
+      );
+    }
+    return controller;
+  }
+
   Future<void> _shareViaWhatsApp(BuildContext context, {required bool asImage}) async {
     // First check if WhatsApp is installed
     final isWhatsAppAvailable = await PrintService.isWhatsAppInstalled();
@@ -234,32 +268,8 @@ class LedgerDisplay extends StatelessWidget {
     
     // Get country code prefix for pre-populating the phone field
     final countryCodePrefix = await StorageService.getCountryCodePrefix();
-    
-    // Determine initial phone number value - show prefix immediately
-    String initialPhoneNumber;
-    if (customerMobileNumber != null && customerMobileNumber!.isNotEmpty) {
-      // If customer has a mobile number, use it with prefix
-      final cleanNumber = customerMobileNumber!.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-      if (cleanNumber.startsWith('+')) {
-        initialPhoneNumber = cleanNumber;
-      } else {
-        initialPhoneNumber = '$countryCodePrefix$cleanNumber';
-      }
-    } else {
-      // Show just the prefix so user can enter the number
-      initialPhoneNumber = countryCodePrefix;
-    }
-    
-    // Show dialog to enter/confirm WhatsApp number
-    final TextEditingController phoneController = TextEditingController(
-      text: initialPhoneNumber,
-    );
-    // Set cursor position after prefix if no customer number
-    if (customerMobileNumber == null || customerMobileNumber!.isEmpty) {
-      phoneController.selection = TextSelection.fromPosition(
-        TextPosition(offset: initialPhoneNumber.length),
-      );
-    }
+    final initialPhoneNumber = await _getFormattedPhoneNumber(countryCodePrefix);
+    final phoneController = _createPhoneController(initialPhoneNumber, countryCodePrefix);
     String? errorText;
 
     final String? phoneNumber = await showDialog<String>(
@@ -395,35 +405,8 @@ class LedgerDisplay extends StatelessWidget {
   Future<void> _sendLedgerSMS(BuildContext context, {String? prefillPhoneNumber}) async {
     // Get country code prefix for pre-populating the phone field
     final countryCodePrefix = await StorageService.getCountryCodePrefix();
-    
-    // Determine initial phone number value - show prefix immediately
-    String initialPhoneNumber;
-    if (prefillPhoneNumber != null && prefillPhoneNumber.isNotEmpty) {
-      // Use the prefilled phone number (already formatted)
-      initialPhoneNumber = prefillPhoneNumber;
-    } else if (customerMobileNumber != null && customerMobileNumber!.isNotEmpty) {
-      // If customer has a mobile number, use it with prefix
-      final cleanNumber = customerMobileNumber!.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-      if (cleanNumber.startsWith('+')) {
-        initialPhoneNumber = cleanNumber;
-      } else {
-        initialPhoneNumber = '$countryCodePrefix$cleanNumber';
-      }
-    } else {
-      // Show just the prefix so user can enter the number
-      initialPhoneNumber = countryCodePrefix;
-    }
-    
-    final TextEditingController phoneController = TextEditingController(
-      text: initialPhoneNumber,
-    );
-    // Set cursor position after prefix if no customer number
-    if ((prefillPhoneNumber == null || prefillPhoneNumber.isEmpty) && 
-        (customerMobileNumber == null || customerMobileNumber!.isEmpty)) {
-      phoneController.selection = TextSelection.fromPosition(
-        TextPosition(offset: initialPhoneNumber.length),
-      );
-    }
+    final initialPhoneNumber = await _getFormattedPhoneNumber(countryCodePrefix, prefillNumber: prefillPhoneNumber);
+    final phoneController = _createPhoneController(initialPhoneNumber, countryCodePrefix, prefillNumber: prefillPhoneNumber);
     String? errorText;
 
     final String? phoneNumber = await showDialog<String>(
