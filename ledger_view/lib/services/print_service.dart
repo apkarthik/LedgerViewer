@@ -289,12 +289,7 @@ class PrintService {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
       
-      // Create meaningful filename
-      final customerParts = result.customerName.split('.');
-      final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
-          ? customerParts[0] 
-          : result.customerName)
-          .replaceAll(RegExp(r'[^\w\s-]'), '');
+      final customerIdClean = _extractCleanCustomerId(result.customerName);
       
       if (asImage) {
         // Convert PDF to image (timestamp added in _sharePdfAsImage)
@@ -332,21 +327,15 @@ class PrintService {
   }
 
   /// Share ledger via WhatsApp to a specific phone number
-  /// Note: Due to WhatsApp API limitations, this uses the system share sheet.
-  /// The user will need to select WhatsApp from the share options.
-  /// Direct WhatsApp file sharing via URL scheme is not supported on most platforms.
+  /// Note: Uses system share sheet for file sharing.
+  /// The phoneNumber parameter is kept for potential future use
+  /// (e.g., pre-selecting WhatsApp contact if API becomes available)
   static Future<void> shareViaWhatsApp(LedgerResult result, String phoneNumber) async {
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
       
-      // Create meaningful filename
-      final customerParts = result.customerName.split('.');
-      final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
-          ? customerParts[0] 
-          : result.customerName)
-          .replaceAll(RegExp(r'[^\w\s-]'), '');
-      
+      final customerIdClean = _extractCleanCustomerId(result.customerName);
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
       
@@ -366,6 +355,16 @@ class PrintService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Extract clean customer ID from customer name for filename
+  static String _extractCleanCustomerId(String customerName) {
+    final customerParts = customerName.split('.');
+    final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
+        ? customerParts[0] 
+        : customerName)
+        .replaceAll(RegExp(r'[^\w\s-]'), '');
+    return customerIdClean;
   }
 
   /// Print balance analysis

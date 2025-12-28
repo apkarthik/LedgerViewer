@@ -270,6 +270,10 @@ class LedgerDisplay extends StatelessWidget {
                       setState(() {
                         errorText = 'Please enter a phone number';
                       });
+                    } else if (!_isValidPhoneNumber(number)) {
+                      setState(() {
+                        errorText = 'Please enter a valid phone number';
+                      });
                     } else {
                       Navigator.of(dialogContext).pop(number);
                     }
@@ -298,6 +302,21 @@ class LedgerDisplay extends StatelessWidget {
         }
       }
     }
+  }
+
+  /// Basic phone number validation
+  /// Checks for minimum length and numeric characters
+  bool _isValidPhoneNumber(String number) {
+    // Remove common formatting characters
+    final cleaned = number.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
+    
+    // Check if contains only digits and has minimum length
+    if (!RegExp(r'^\d+$').hasMatch(cleaned)) {
+      return false;
+    }
+    
+    // Minimum 10 digits for a valid phone number
+    return cleaned.length >= 10;
   }
 
   Widget _buildTableHeader(Color backgroundColor) {
