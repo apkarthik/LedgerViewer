@@ -215,53 +215,70 @@ class LedgerDisplay extends StatelessWidget {
     final TextEditingController phoneController = TextEditingController(
       text: customerMobileNumber ?? '',
     );
+    String? errorText;
 
     final String? phoneNumber = await showDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Share via WhatsApp'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Enter the WhatsApp number (with country code):'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  hintText: '+91XXXXXXXXXX',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
-                ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Share via WhatsApp'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Enter the WhatsApp number (with country code):'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      hintText: '+91XXXXXXXXXX',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.phone),
+                      errorText: errorText,
+                    ),
+                    onChanged: (value) {
+                      if (errorText != null) {
+                        setState(() {
+                          errorText = null;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ledger will be shared as PDF to this number',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Ledger will be shared as PDF to this number',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final number = phoneController.text.trim();
-                if (number.isNotEmpty) {
-                  Navigator.of(dialogContext).pop(number);
-                }
-              },
-              child: const Text('Share'),
-            ),
-          ],
+                ElevatedButton(
+                  onPressed: () {
+                    final number = phoneController.text.trim();
+                    if (number.isEmpty) {
+                      setState(() {
+                        errorText = 'Please enter a phone number';
+                      });
+                    } else {
+                      Navigator.of(dialogContext).pop(number);
+                    }
+                  },
+                  child: const Text('Share'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -279,16 +296,6 @@ class LedgerDisplay extends StatelessWidget {
             ),
           );
         }
-      }
-    } else if (phoneNumber != null) {
-      // User clicked Share but field was empty
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter a phone number'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }

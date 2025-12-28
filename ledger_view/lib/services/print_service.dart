@@ -355,16 +355,6 @@ class PrintService {
       final file = File('${tempDir.path}/$filename');
       await file.writeAsBytes(pdfBytes);
       
-      // Clean phone number (remove spaces, dashes, etc.)
-      String cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-      
-      // Add country code if not present (assuming India +91 based on ₹ currency)
-      if (!cleanPhone.startsWith('+')) {
-        if (!cleanPhone.startsWith('91') && cleanPhone.length == 10) {
-          cleanPhone = '91$cleanPhone';
-        }
-      }
-      
       // Use system share sheet which will allow user to select WhatsApp
       // This is the recommended approach as direct WhatsApp file sharing
       // via URL scheme is not reliably supported across platforms
