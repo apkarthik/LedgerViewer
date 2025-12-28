@@ -350,14 +350,9 @@ class PrintService {
   /// Send SMS with ledger summary as fallback
   static Future<void> sendLedgerSMS(LedgerResult result, {required String phoneNumber}) async {
     try {
-      // Calculate totals
-      double totalDebit = 0;
-      double totalCredit = 0;
-      
-      for (var entry in result.entries) {
-        totalDebit += entry.debit;
-        totalCredit += entry.credit;
-      }
+      // Parse totals from the result (they're already calculated)
+      final totalDebit = double.tryParse(result.totalDebit.replaceAll(',', '')) ?? 0.0;
+      final totalCredit = double.tryParse(result.totalCredit.replaceAll(',', '')) ?? 0.0;
       
       final balance = totalCredit - totalDebit;
       final balanceText = balance >= 0 
@@ -375,10 +370,8 @@ Entry Count: ${result.entries.length}''';
       // Format phone number for SMS (remove + and spaces)
       final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\+\-\(\)]'), '');
       
-      // Construct SMS URL
-      final smsUrl = Platform.isAndroid
-          ? 'sms:$cleanPhoneNumber?body=${Uri.encodeComponent(message)}'
-          : 'sms:$cleanPhoneNumber&body=${Uri.encodeComponent(message)}';
+      // Construct SMS URL - both iOS and Android use '?' for query parameter
+      final smsUrl = 'sms:$cleanPhoneNumber?body=${Uri.encodeComponent(message)}';
       
       final uri = Uri.parse(smsUrl);
       
