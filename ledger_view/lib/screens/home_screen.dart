@@ -763,11 +763,6 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    if (phoneNumber.isEmpty) {
-      _showError('No phone number available');
-      return;
-    }
-    
     final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);

@@ -305,18 +305,21 @@ class LedgerDisplay extends StatelessWidget {
   }
 
   /// Basic phone number validation
-  /// Checks for minimum length and numeric characters
+  /// Checks for minimum length and numeric characters (allows + for country code)
   bool _isValidPhoneNumber(String number) {
-    // Remove common formatting characters
-    final cleaned = number.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
+    // Remove common formatting characters except +
+    final cleaned = number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
     
-    // Check if contains only digits and has minimum length
-    if (!RegExp(r'^\d+$').hasMatch(cleaned)) {
+    // Check if contains only digits (and optionally + at start)
+    if (!RegExp(r'^\+?\d+$').hasMatch(cleaned)) {
       return false;
     }
     
+    // Extract just digits for length check
+    final digitsOnly = cleaned.replaceAll('+', '');
+    
     // Minimum 10 digits for a valid phone number
-    return cleaned.length >= 10;
+    return digitsOnly.length >= 10;
   }
 
   Widget _buildTableHeader(Color backgroundColor) {

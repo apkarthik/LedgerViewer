@@ -326,11 +326,11 @@ class PrintService {
     }
   }
 
-  /// Share ledger via WhatsApp to a specific phone number
-  /// Note: Uses system share sheet for file sharing.
-  /// The phoneNumber parameter is kept for potential future use
-  /// (e.g., pre-selecting WhatsApp contact if API becomes available)
-  static Future<void> shareViaWhatsApp(LedgerResult result, String phoneNumber) async {
+  /// Share ledger via WhatsApp
+  /// Opens system share sheet for WhatsApp sharing
+  /// [phoneNumber] parameter is currently unused but kept for potential future
+  /// WhatsApp API integration if direct contact selection becomes available
+  static Future<void> shareViaWhatsApp(LedgerResult result, [String? phoneNumber]) async {
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
