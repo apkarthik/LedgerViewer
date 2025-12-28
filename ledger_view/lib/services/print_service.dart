@@ -288,12 +288,7 @@ class PrintService {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
       
-      // Create meaningful filename
-      final customerParts = result.customerName.split('.');
-      final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
-          ? customerParts[0] 
-          : result.customerName)
-          .replaceAll(RegExp(r'[^\w\s-]'), '');
+      final customerIdClean = _extractCleanCustomerId(result.customerName);
       
       if (asImage) {
         // Convert PDF to image (timestamp added in _sharePdfAsImage)
@@ -328,6 +323,45 @@ class PrintService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Share ledger via WhatsApp
+  /// Opens system share sheet for WhatsApp sharing
+  static Future<void> shareViaWhatsApp(LedgerResult result) async {
+    try {
+      final pdf = await _generateLedgerPdf(result);
+      final pdfBytes = await pdf.save();
+      
+      final customerIdClean = _extractCleanCustomerId(result.customerName);
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
+      
+      // Save PDF to temp directory
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$filename');
+      await file.writeAsBytes(pdfBytes);
+      
+      // Use system share sheet which will allow user to select WhatsApp
+      // This is the recommended approach as direct WhatsApp file sharing
+      // via URL scheme is not reliably supported across platforms
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Ledger Statement',
+        text: 'Please find your ledger statement attached.',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Extract clean customer ID from customer name for filename
+  static String _extractCleanCustomerId(String customerName) {
+    final customerParts = customerName.split('.');
+    final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
+        ? customerParts[0] 
+        : customerName)
+        .replaceAll(RegExp(r'[^\w\s-]'), '');
+    return customerIdClean;
   }
 
   /// Print balance analysis

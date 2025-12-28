@@ -137,6 +137,7 @@ class _BalanceAnalysisScreenState extends State<BalanceAnalysisScreen> {
       MaterialPageRoute(
         builder: (context) => HomeScreen(
           initialSearchQuery: customerBalance.customerId,
+          hideSearch: true,
         ),
       ),
     );

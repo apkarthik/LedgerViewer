@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/ledger_entry.dart';
 import '../providers/theme_provider.dart';
 import '../services/print_service.dart';
@@ -9,8 +10,13 @@ import '../utils/voucher_type_mapper.dart';
 
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
+  final String? customerMobileNumber;
 
-  const LedgerDisplay({super.key, required this.result});
+  const LedgerDisplay({
+    super.key, 
+    required this.result,
+    this.customerMobileNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +86,13 @@ class LedgerDisplay extends StatelessWidget {
                   icon: const Icon(Icons.share, color: Colors.white),
                   tooltip: 'Share Ledger',
                   color: Colors.white,
-                  onSelected: (value) => _shareLedger(context, value == 'image'),
+                  onSelected: (value) {
+                    if (value == 'whatsapp') {
+                      _shareViaWhatsApp(context);
+                    } else {
+                      _shareLedger(context, value == 'image');
+                    }
+                  },
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'pdf',
@@ -99,6 +111,16 @@ class LedgerDisplay extends StatelessWidget {
                           Icon(Icons.image, color: Colors.blue),
                           SizedBox(width: 12),
                           Text('Share as Image'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'whatsapp',
+                      child: Row(
+                        children: [
+                          Icon(Icons.message, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('Share via WhatsApp'),
                         ],
                       ),
                     ),
@@ -186,6 +208,119 @@ class LedgerDisplay extends StatelessWidget {
         );
       }
     }
+  }
+
+  Future<void> _shareViaWhatsApp(BuildContext context) async {
+    // Show dialog to enter/confirm WhatsApp number
+    // Note: The number is used for user confirmation, actual sharing uses system share sheet
+    final TextEditingController phoneController = TextEditingController(
+      text: customerMobileNumber ?? '',
+    );
+    String? errorText;
+
+    final String? phoneNumber = await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Share via WhatsApp'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Confirm the recipient\'s WhatsApp number:'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      hintText: '+91XXXXXXXXXX',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.phone),
+                      errorText: errorText,
+                    ),
+                    onChanged: (value) {
+                      if (errorText != null) {
+                        setState(() {
+                          errorText = null;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ledger PDF will be shared to this number via system share sheet',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final number = phoneController.text.trim();
+                    if (number.isEmpty) {
+                      setState(() {
+                        errorText = 'Please enter a phone number';
+                      });
+                    } else if (!_isValidPhoneNumber(number)) {
+                      setState(() {
+                        errorText = 'Please enter a valid phone number';
+                      });
+                    } else {
+                      Navigator.of(dialogContext).pop(number);
+                    }
+                  },
+                  child: const Text('Share'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      try {
+        // Generate PDF and share via WhatsApp
+        await PrintService.shareViaWhatsApp(result);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error sharing via WhatsApp: ${e.toString()}'),
+              backgroundColor: Colors.red.shade600,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Basic phone number validation
+  /// Checks for minimum length and numeric characters (allows + for country code)
+  bool _isValidPhoneNumber(String number) {
+    // Remove common formatting characters except +
+    final cleaned = number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    
+    // Check if contains only digits (and optionally + at start)
+    if (!RegExp(r'^\+?\d+$').hasMatch(cleaned)) {
+      return false;
+    }
+    
+    // Extract just digits for length check
+    final digitsOnly = cleaned.replaceAll('+', '');
+    
+    // Minimum 10 digits for a valid phone number
+    return digitsOnly.length >= 10;
   }
 
   Widget _buildTableHeader(Color backgroundColor) {
