@@ -332,6 +332,9 @@ class PrintService {
   }
 
   /// Share ledger via WhatsApp to a specific phone number
+  /// Note: Due to WhatsApp API limitations, this uses the system share sheet.
+  /// The user will need to select WhatsApp from the share options.
+  /// Direct WhatsApp file sharing via URL scheme is not supported on most platforms.
   static Future<void> shareViaWhatsApp(LedgerResult result, String phoneNumber) async {
     try {
       final pdf = await _generateLedgerPdf(result);
@@ -355,32 +358,21 @@ class PrintService {
       // Clean phone number (remove spaces, dashes, etc.)
       String cleanPhone = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
       
-      // Add country code if not present (assuming India +91)
+      // Add country code if not present (assuming India +91 based on ₹ currency)
       if (!cleanPhone.startsWith('+')) {
         if (!cleanPhone.startsWith('91') && cleanPhone.length == 10) {
           cleanPhone = '91$cleanPhone';
         }
       }
       
-      // Encode the message
-      final message = Uri.encodeComponent('Please find your ledger statement attached.');
-      
-      // Create WhatsApp URL with file
-      // Using whatsapp://send works better on mobile devices
-      final Uri whatsappUri = Uri.parse('whatsapp://send?phone=$cleanPhone&text=$message');
-      
-      // Try to launch WhatsApp with the message
-      // Note: File sharing via URL doesn't work directly, so we'll share via Share API with text
-      if (await canLaunchUrl(whatsappUri)) {
-        // Share file first via Share API
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'Ledger Statement',
-          text: 'Please find your ledger statement attached.',
-        );
-      } else {
-        throw Exception('WhatsApp is not installed on this device');
-      }
+      // Use system share sheet which will allow user to select WhatsApp
+      // This is the recommended approach as direct WhatsApp file sharing
+      // via URL scheme is not reliably supported across platforms
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Ledger Statement',
+        text: 'Please find your ledger statement attached.',
+      );
     } catch (e) {
       rethrow;
     }

@@ -218,7 +218,7 @@ class LedgerDisplay extends StatelessWidget {
 
     final String? phoneNumber = await showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Share via WhatsApp'),
           content: Column(
@@ -249,21 +249,14 @@ class LedgerDisplay extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
                 final number = phoneController.text.trim();
                 if (number.isNotEmpty) {
-                  Navigator.of(context).pop(number);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a phone number'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  Navigator.of(dialogContext).pop(number);
                 }
               },
               child: const Text('Share'),
@@ -286,6 +279,16 @@ class LedgerDisplay extends StatelessWidget {
             ),
           );
         }
+      }
+    } else if (phoneNumber != null) {
+      // User clicked Share but field was empty
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a phone number'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
