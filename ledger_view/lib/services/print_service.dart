@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:whatsapp_share2/whatsapp_share2.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -336,7 +337,8 @@ class PrintService {
       // For Android and iOS, use whatsapp:// scheme which is more reliable
       if (Platform.isAndroid || Platform.isIOS) {
         final whatsappUrl = Uri.parse('whatsapp://send');
-        return await canLaunchUrl(whatsappUrl);
+        final whatsappBusinessUrl = Uri.parse('whatsapp-business://send');
+        return await canLaunchUrl(whatsappUrl) || await canLaunchUrl(whatsappBusinessUrl);
       }
       // For other platforms, fall back to web URL
       final whatsappUrl = Uri.parse('https://wa.me/');
@@ -386,9 +388,8 @@ Entry Count: ${result.entries.length}''';
 
   /// Share ledger via system share sheet for WhatsApp sharing
   /// Returns true if share was initiated successfully, false otherwise
-  /// Note: phoneNumber parameter is kept for validation in the caller but not used here
-  /// as Android share intents don't support direct contact targeting
   static Future<bool> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
+    File? shareFile;
     try {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
@@ -397,7 +398,6 @@ Entry Count: ${result.entries.length}''';
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       
       File file;
-      
       if (asImage) {
         // Convert PDF to image
         final filename = 'Ledger_${customerIdClean}_$timestamp.jpg';
@@ -447,18 +447,49 @@ Entry Count: ${result.entries.length}''';
         file = File('${tempDir.path}/$filename');
         await file.writeAsBytes(pdfBytes);
       }
+      shareFile = file;
+      final formattedPhone = _formatPhoneForWhatsApp(phoneNumber);
+      if (formattedPhone.isEmpty) {
+        throw Exception('Please enter a valid WhatsApp number with country code');
+      }
       
-      // Share file via system share sheet
-      // User will select WhatsApp from the share options
-      await Share.shareXFiles(
-        [XFile(file.path)],
+      // Attempt direct WhatsApp share to the provided phone number (works for saved and unsaved)
+      await WhatsappShare.shareFile(
+        phone: formattedPhone,
+        filePath: [file.path],
         text: _whatsAppShareMessage,
       );
       
       return true; // Share was initiated successfully
     } catch (e) {
-      rethrow;
+      // Fallback to system share sheet so user can still share manually
+      try {
+        if (shareFile == null) {
+          rethrow;
+        }
+        final fallbackFile = XFile.fromData(
+          await shareFile.readAsBytes(),
+          mimeType: asImage ? 'image/jpeg' : 'application/pdf',
+          name: shareFile.uri.pathSegments.last,
+        );
+        await Share.shareXFiles(
+          [fallbackFile],
+          text: _whatsAppShareMessage,
+        );
+        return true;
+      } catch (fallbackError) {
+        throw Exception('WhatsApp share failed ($e) and fallback share also failed ($fallbackError)');
+      }
     }
+  }
+
+  /// Convert phone number to WhatsApp friendly format (digits only)
+  static String _formatPhoneForWhatsApp(String phoneNumber) {
+    final digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    if (digitsOnly.length < 10) {
+      return '';
+    }
+    return digitsOnly;
   }
 
   /// Extract clean customer ID from customer name for filename
