@@ -9,6 +9,17 @@ import '../services/theme_service.dart';
 import '../services/storage_service.dart';
 import '../utils/voucher_type_mapper.dart';
 
+/// Result of share action selection dialog
+class ShareActionResult {
+  final bool isSmsSelected;
+  final String? phoneNumber;
+  
+  const ShareActionResult.sms() : isSmsSelected = true, phoneNumber = null;
+  const ShareActionResult.phoneNumber(this.phoneNumber) : isSmsSelected = false;
+  
+  bool get hasPhoneNumber => phoneNumber != null && phoneNumber!.isNotEmpty;
+}
+
 class LedgerDisplay extends StatelessWidget {
   final LedgerResult result;
   final String? customerMobileNumber;
@@ -285,7 +296,7 @@ class LedgerDisplay extends StatelessWidget {
     );
     String? errorText;
 
-    final String? phoneNumber = await showDialog<String>(
+    final ShareActionResult? actionResult = await showDialog<ShareActionResult>(
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
@@ -383,7 +394,7 @@ class LedgerDisplay extends StatelessWidget {
                 ),
                 TextButton.icon(
                   onPressed: () {
-                    Navigator.of(dialogContext).pop('SMS_FALLBACK');
+                    Navigator.of(dialogContext).pop(const ShareActionResult.sms());
                   },
                   icon: const Icon(Icons.sms, size: 18),
                   label: const Text('Send SMS'),
@@ -405,7 +416,7 @@ class LedgerDisplay extends StatelessWidget {
                     } else {
                       // Add country code prefix if not present
                       final formattedNumber = await _formatPhoneNumberWithPrefix(number);
-                      Navigator.of(dialogContext).pop(formattedNumber);
+                      Navigator.of(dialogContext).pop(ShareActionResult.phoneNumber(formattedNumber));
                     }
                   },
                   child: const Text('Share'),
@@ -417,14 +428,21 @@ class LedgerDisplay extends StatelessWidget {
       },
     );
 
-    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+    if (actionResult != null) {
       // Check if user chose SMS fallback
-      if (phoneNumber == 'SMS_FALLBACK') {
+      if (actionResult.isSmsSelected) {
         if (context.mounted) {
           await _sendLedgerSMS(context);
         }
         return;
       }
+      
+      // Validate phone number is present
+      if (!actionResult.hasPhoneNumber) {
+        return;
+      }
+      
+      final phoneNumber = actionResult.phoneNumber!;
       
       try {
         // Show loading indicator

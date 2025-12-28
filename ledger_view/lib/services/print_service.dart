@@ -333,7 +333,13 @@ class PrintService {
   /// Check if WhatsApp is installed on the device
   static Future<bool> isWhatsAppInstalled() async {
     try {
-      // Try to check if WhatsApp can be launched
+      // Try to check if WhatsApp can be launched using app-specific URL scheme
+      // For Android and iOS, use whatsapp:// scheme which is more reliable
+      if (Platform.isAndroid || Platform.isIOS) {
+        final whatsappUrl = Uri.parse('whatsapp://send');
+        return await canLaunchUrl(whatsappUrl);
+      }
+      // For other platforms, fall back to web URL
       final whatsappUrl = Uri.parse('https://wa.me/');
       return await canLaunchUrl(whatsappUrl);
     } catch (e) {
