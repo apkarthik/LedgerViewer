@@ -34,58 +34,48 @@ class MainActivity: FlutterActivity() {
     }
 
     private fun shareToWhatsApp(filePath: String, phoneNumber: String, message: String, mimeType: String): Boolean {
-        return try {
-            val file = File(filePath)
-            if (!file.exists()) {
-                return false
-            }
+        val file = File(filePath)
+        if (!file.exists()) {
+            return false
+        }
 
-            // Get content URI using FileProvider
-            val contentUri = FileProvider.getUriForFile(
+        // Get content URI using FileProvider
+        val contentUri = try {
+            FileProvider.getUriForFile(
                 this,
                 "${applicationContext.packageName}.fileprovider",
                 file
             )
+        } catch (e: Exception) {
+            return false
+        }
 
-            // Create intent for WhatsApp
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = mimeType
-                putExtra(Intent.EXTRA_STREAM, contentUri)
-                putExtra(Intent.EXTRA_TEXT, message)
-                putExtra("jid", "$phoneNumber@s.whatsapp.net") // WhatsApp-specific extra for contact
-                setPackage("com.whatsapp") // Target WhatsApp specifically
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-
-            // Try to start WhatsApp
+        // Try WhatsApp first
+        return try {
+            val intent = createWhatsAppIntent(contentUri, phoneNumber, message, mimeType, "com.whatsapp")
             startActivity(intent)
             true
         } catch (e: Exception) {
-            // If WhatsApp is not installed or something fails, try WhatsApp Business
+            // If WhatsApp is not installed, try WhatsApp Business
             try {
-                val file = File(filePath)
-                val contentUri = FileProvider.getUriForFile(
-                    this,
-                    "${applicationContext.packageName}.fileprovider",
-                    file
-                )
-
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = mimeType
-                    putExtra(Intent.EXTRA_STREAM, contentUri)
-                    putExtra(Intent.EXTRA_TEXT, message)
-                    putExtra("jid", "$phoneNumber@s.whatsapp.net")
-                    setPackage("com.whatsapp.w4b") // WhatsApp Business
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-
+                val intent = createWhatsAppIntent(contentUri, phoneNumber, message, mimeType, "com.whatsapp.w4b")
                 startActivity(intent)
                 true
             } catch (e2: Exception) {
                 false
             }
+        }
+    }
+
+    private fun createWhatsAppIntent(contentUri: Uri, phoneNumber: String, message: String, mimeType: String, packageName: String): Intent {
+        return Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, contentUri)
+            putExtra(Intent.EXTRA_TEXT, message)
+            putExtra("jid", "$phoneNumber@s.whatsapp.net") // WhatsApp-specific extra for contact
+            setPackage(packageName)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
 }

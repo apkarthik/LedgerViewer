@@ -479,11 +479,7 @@ Entry Count: ${result.entries.length}''';
       
       // Fallback approach for iOS or if Android native method fails
       // Share file with contact information in the message
-      final xFile = XFile(
-        file.path,
-        mimeType: asImage ? 'image/jpeg' : 'application/pdf',
-        name: file.uri.pathSegments.last,
-      );
+      final xFile = _createXFileFromPath(file.path, asImage);
       
       // Build message with contact information
       final shareMessage = '$_whatsAppShareMessage\n\nRecipient: $phoneNumber';
@@ -501,11 +497,7 @@ Entry Count: ${result.entries.length}''';
         if (shareFile == null) {
           rethrow;
         }
-        final fallbackFile = XFile(
-          shareFile.path,
-          mimeType: asImage ? 'image/jpeg' : 'application/pdf',
-          name: shareFile.uri.pathSegments.last,
-        );
+        final fallbackFile = _createXFileFromPath(shareFile.path, asImage);
         await Share.shareXFiles(
           [fallbackFile],
           text: '$_whatsAppShareMessage\n\nRecipient: $phoneNumber',
@@ -524,6 +516,16 @@ Entry Count: ${result.entries.length}''';
       return '';
     }
     return digitsOnly;
+  }
+
+  /// Create XFile from file path with appropriate mime type
+  static XFile _createXFileFromPath(String filePath, bool asImage) {
+    final file = File(filePath);
+    return XFile(
+      file.path,
+      mimeType: asImage ? 'image/jpeg' : 'application/pdf',
+      name: file.uri.pathSegments.last,
+    );
   }
 
   /// Extract clean customer ID from customer name for filename
