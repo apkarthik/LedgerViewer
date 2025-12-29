@@ -91,11 +91,33 @@ class LedgerDisplay extends StatelessWidget {
                       _shareViaWhatsApp(context, asImage: false);
                     } else if (value == 'whatsapp_image') {
                       _shareViaWhatsApp(context, asImage: true);
+                    } else if (value == 'sms') {
+                      _sendLedgerSMS(context);
                     } else {
                       _shareLedger(context, value == 'image');
                     }
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'whatsapp_pdf',
+                      child: Row(
+                        children: [
+                          Icon(Icons.message, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('WhatsApp (PDF)'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'whatsapp_image',
+                      child: Row(
+                        children: [
+                          Icon(Icons.message, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('WhatsApp (Image)'),
+                        ],
+                      ),
+                    ),
                     const PopupMenuItem(
                       value: 'pdf',
                       child: Row(
@@ -117,22 +139,12 @@ class LedgerDisplay extends StatelessWidget {
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'whatsapp_pdf',
+                      value: 'sms',
                       child: Row(
                         children: [
-                          Icon(Icons.message, color: Colors.green),
+                          Icon(Icons.sms, color: Colors.orange),
                           SizedBox(width: 12),
-                          Text('WhatsApp (PDF)'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'whatsapp_image',
-                      child: Row(
-                        children: [
-                          Icon(Icons.message, color: Colors.green),
-                          SizedBox(width: 12),
-                          Text('WhatsApp (Image)'),
+                          Text('Share SMS'),
                         ],
                       ),
                     ),
