@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -15,6 +17,9 @@ import '../models/customer_balance.dart';
 import '../utils/voucher_type_mapper.dart';
 
 class PrintService {
+  // Method channel for native Android/iOS functionality
+  static const platform = MethodChannel('com.ledgerview.app/whatsapp');
+  
   // Thermal printer paper format (58mm width)
   // 58mm = 164.4 points at 72 DPI
   static const thermalPageFormat = PdfPageFormat(
@@ -385,7 +390,8 @@ Entry Count: ${result.entries.length}''';
     }
   }
 
-  /// Share ledger via system share sheet for WhatsApp sharing
+  /// Share ledger directly via WhatsApp with contact pre-filled
+  /// Opens WhatsApp app with the contact number and file attached
   /// Returns true if share was initiated successfully, false otherwise
   static Future<bool> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
     File? shareFile;
@@ -454,16 +460,39 @@ Entry Count: ${result.entries.length}''';
         throw Exception('Please enter a valid WhatsApp number with country code');
       }
       
-      // Share file via system share sheet
-      // User can select WhatsApp or any other sharing option
-      final xFile = XFile.fromData(
-        await file.readAsBytes(),
-        mimeType: asImage ? 'image/jpeg' : 'application/pdf',
-        name: file.uri.pathSegments.last,
-      );
+      // Try Android-specific method channel first (for direct WhatsApp targeting)
+      if (Platform.isAndroid) {
+        try {
+          final success = await platform.invokeMethod('shareToWhatsApp', {
+            'filePath': file.path,
+            'phoneNumber': formattedPhone,
+            'message': _whatsAppShareMessage,
+            'mimeType': asImage ? 'image/jpeg' : 'application/pdf',
+          });
+          
+          if (success == true) {
+            return true;
+          }
+        } on PlatformException catch (e) {
+          // Native method failed, log and fall through to alternative approach
+          debugPrint('WhatsApp native sharing failed: ${e.code} - ${e.message}');
+        } catch (e) {
+          // Unexpected error, log and fall through
+          debugPrint('Unexpected error in WhatsApp native sharing: $e');
+        }
+      }
+      
+      // Fallback approach for iOS or if Android native method fails
+      // Share file with contact information in the message
+      final xFile = _createXFileFromPath(file.path, asImage);
+      
+      // Build message with contact information
+      final shareMessage = '$_whatsAppShareMessage\n\nRecipient: $phoneNumber';
+      
+      // Use shareXFiles which will show WhatsApp as a share option
       await Share.shareXFiles(
         [xFile],
-        text: _whatsAppShareMessage,
+        text: shareMessage,
       );
       
       return true; // Share was initiated successfully
@@ -473,14 +502,10 @@ Entry Count: ${result.entries.length}''';
         if (shareFile == null) {
           rethrow;
         }
-        final fallbackFile = XFile.fromData(
-          await shareFile.readAsBytes(),
-          mimeType: asImage ? 'image/jpeg' : 'application/pdf',
-          name: shareFile.uri.pathSegments.last,
-        );
+        final fallbackFile = _createXFileFromPath(shareFile.path, asImage);
         await Share.shareXFiles(
           [fallbackFile],
-          text: _whatsAppShareMessage,
+          text: '$_whatsAppShareMessage\n\nRecipient: $phoneNumber',
         );
         return true;
       } catch (fallbackError) {
@@ -496,6 +521,16 @@ Entry Count: ${result.entries.length}''';
       return '';
     }
     return digitsOnly;
+  }
+
+  /// Create XFile from file path with appropriate mime type
+  static XFile _createXFileFromPath(String filePath, bool asImage) {
+    final file = File(filePath);
+    return XFile(
+      file.path,
+      mimeType: asImage ? 'image/jpeg' : 'application/pdf',
+      name: file.uri.pathSegments.last,
+    );
   }
 
   /// Extract clean customer ID from customer name for filename
