@@ -447,36 +447,15 @@ Entry Count: ${result.entries.length}''';
         await file.writeAsBytes(pdfBytes);
       }
       shareFile = file;
+      
+      // Validate phone number
       final formattedPhone = _formatPhoneForWhatsApp(phoneNumber);
       if (formattedPhone.isEmpty) {
         throw Exception('Please enter a valid WhatsApp number with country code');
       }
       
-      // Use url_launcher to open WhatsApp with the phone number
-      // The user will need to manually attach the file from their file manager
-      // or we fall back to system share sheet
-      final whatsappUrl = Uri.parse('https://wa.me/$formattedPhone?text=${Uri.encodeComponent(_whatsAppShareMessage)}');
-      
-      // Try to open WhatsApp first, then share the file via share sheet
-      try {
-        if (await canLaunchUrl(whatsappUrl)) {
-          // Share file first via system share sheet
-          final xFile = XFile.fromData(
-            await file.readAsBytes(),
-            mimeType: asImage ? 'image/jpeg' : 'application/pdf',
-            name: file.uri.pathSegments.last,
-          );
-          await Share.shareXFiles(
-            [xFile],
-            text: _whatsAppShareMessage,
-          );
-          return true;
-        }
-      } catch (_) {
-        // If WhatsApp URL launch fails, fall through to share sheet
-      }
-      
-      // Fallback to system share sheet
+      // Share file via system share sheet
+      // User can select WhatsApp or any other sharing option
       final xFile = XFile.fromData(
         await file.readAsBytes(),
         mimeType: asImage ? 'image/jpeg' : 'application/pdf',
