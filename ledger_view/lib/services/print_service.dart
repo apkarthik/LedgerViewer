@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -15,6 +16,9 @@ import '../models/customer_balance.dart';
 import '../utils/voucher_type_mapper.dart';
 
 class PrintService {
+  // Method channel for native Android/iOS functionality
+  static const platform = MethodChannel('com.ledgerview.app/whatsapp');
+  
   // Thermal printer paper format (58mm width)
   // 58mm = 164.4 points at 72 DPI
   static const thermalPageFormat = PdfPageFormat(
@@ -385,7 +389,8 @@ Entry Count: ${result.entries.length}''';
     }
   }
 
-  /// Share ledger via system share sheet for WhatsApp sharing
+  /// Share ledger directly via WhatsApp with contact pre-filled
+  /// Opens WhatsApp app with the contact number and file attached
   /// Returns true if share was initiated successfully, false otherwise
   static Future<bool> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
     File? shareFile;
@@ -454,16 +459,39 @@ Entry Count: ${result.entries.length}''';
         throw Exception('Please enter a valid WhatsApp number with country code');
       }
       
-      // Share file via system share sheet
-      // User can select WhatsApp or any other sharing option
-      final xFile = XFile.fromData(
-        await file.readAsBytes(),
+      // Try Android-specific method channel first (for direct WhatsApp targeting)
+      if (Platform.isAndroid) {
+        try {
+          final success = await platform.invokeMethod('shareToWhatsApp', {
+            'filePath': file.path,
+            'phoneNumber': formattedPhone,
+            'message': _whatsAppShareMessage,
+            'mimeType': asImage ? 'image/jpeg' : 'application/pdf',
+          });
+          
+          if (success == true) {
+            return true;
+          }
+        } catch (e) {
+          // If native method fails, fall through to alternative approach
+        }
+      }
+      
+      // Fallback approach for iOS or if Android native method fails
+      // Share file with contact information in the message
+      final xFile = XFile(
+        file.path,
         mimeType: asImage ? 'image/jpeg' : 'application/pdf',
         name: file.uri.pathSegments.last,
       );
+      
+      // Build message with contact information
+      final shareMessage = '$_whatsAppShareMessage\n\nRecipient: $phoneNumber';
+      
+      // Use shareXFiles which will show WhatsApp as a share option
       await Share.shareXFiles(
         [xFile],
-        text: _whatsAppShareMessage,
+        text: shareMessage,
       );
       
       return true; // Share was initiated successfully
@@ -473,14 +501,14 @@ Entry Count: ${result.entries.length}''';
         if (shareFile == null) {
           rethrow;
         }
-        final fallbackFile = XFile.fromData(
-          await shareFile.readAsBytes(),
+        final fallbackFile = XFile(
+          shareFile.path,
           mimeType: asImage ? 'image/jpeg' : 'application/pdf',
           name: shareFile.uri.pathSegments.last,
         );
         await Share.shareXFiles(
           [fallbackFile],
-          text: _whatsAppShareMessage,
+          text: '$_whatsAppShareMessage\n\nRecipient: $phoneNumber',
         );
         return true;
       } catch (fallbackError) {
