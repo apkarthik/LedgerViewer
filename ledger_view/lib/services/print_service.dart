@@ -6,7 +6,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:whatsapp_share2/whatsapp_share2.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -453,10 +452,38 @@ Entry Count: ${result.entries.length}''';
         throw Exception('Please enter a valid WhatsApp number with country code');
       }
       
-      // Attempt direct WhatsApp share to the provided phone number (works for saved and unsaved)
-      await WhatsappShare.shareFile(
-        phone: formattedPhone,
-        filePath: [file.path],
+      // Use url_launcher to open WhatsApp with the phone number
+      // The user will need to manually attach the file from their file manager
+      // or we fall back to system share sheet
+      final whatsappUrl = Uri.parse('https://wa.me/$formattedPhone?text=${Uri.encodeComponent(_whatsAppShareMessage)}');
+      
+      // Try to open WhatsApp first, then share the file via share sheet
+      try {
+        if (await canLaunchUrl(whatsappUrl)) {
+          // Share file first via system share sheet
+          final xFile = XFile.fromData(
+            await file.readAsBytes(),
+            mimeType: asImage ? 'image/jpeg' : 'application/pdf',
+            name: file.uri.pathSegments.last,
+          );
+          await Share.shareXFiles(
+            [xFile],
+            text: _whatsAppShareMessage,
+          );
+          return true;
+        }
+      } catch (_) {
+        // If WhatsApp URL launch fails, fall through to share sheet
+      }
+      
+      // Fallback to system share sheet
+      final xFile = XFile.fromData(
+        await file.readAsBytes(),
+        mimeType: asImage ? 'image/jpeg' : 'application/pdf',
+        name: file.uri.pathSegments.last,
+      );
+      await Share.shareXFiles(
+        [xFile],
         text: _whatsAppShareMessage,
       );
       
