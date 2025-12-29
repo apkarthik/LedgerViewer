@@ -6,7 +6,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:whatsapp_share2/whatsapp_share2.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -448,15 +447,22 @@ Entry Count: ${result.entries.length}''';
         await file.writeAsBytes(pdfBytes);
       }
       shareFile = file;
+      
+      // Validate phone number
       final formattedPhone = _formatPhoneForWhatsApp(phoneNumber);
       if (formattedPhone.isEmpty) {
         throw Exception('Please enter a valid WhatsApp number with country code');
       }
       
-      // Attempt direct WhatsApp share to the provided phone number (works for saved and unsaved)
-      await WhatsappShare.shareFile(
-        phone: formattedPhone,
-        filePath: [file.path],
+      // Share file via system share sheet
+      // User can select WhatsApp or any other sharing option
+      final xFile = XFile.fromData(
+        await file.readAsBytes(),
+        mimeType: asImage ? 'image/jpeg' : 'application/pdf',
+        name: file.uri.pathSegments.last,
+      );
+      await Share.shareXFiles(
+        [xFile],
         text: _whatsAppShareMessage,
       );
       
