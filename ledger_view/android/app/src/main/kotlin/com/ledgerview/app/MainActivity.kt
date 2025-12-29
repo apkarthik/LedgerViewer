@@ -2,6 +2,7 @@ package com.ledgerview.app
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -10,6 +11,7 @@ import java.io.File
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.ledgerview.app/whatsapp"
+    private val TAG = "WhatsAppShare"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -36,6 +38,7 @@ class MainActivity: FlutterActivity() {
     private fun shareToWhatsApp(filePath: String, phoneNumber: String, message: String, mimeType: String): Boolean {
         val file = File(filePath)
         if (!file.exists()) {
+            Log.e(TAG, "File does not exist: $filePath")
             return false
         }
 
@@ -47,6 +50,7 @@ class MainActivity: FlutterActivity() {
                 file
             )
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to get FileProvider URI for: $filePath", e)
             return false
         }
 
@@ -54,14 +58,18 @@ class MainActivity: FlutterActivity() {
         return try {
             val intent = createWhatsAppIntent(contentUri, phoneNumber, message, mimeType, "com.whatsapp")
             startActivity(intent)
+            Log.d(TAG, "Successfully opened WhatsApp")
             true
         } catch (e: Exception) {
             // If WhatsApp is not installed, try WhatsApp Business
+            Log.w(TAG, "WhatsApp not available, trying WhatsApp Business", e)
             try {
                 val intent = createWhatsAppIntent(contentUri, phoneNumber, message, mimeType, "com.whatsapp.w4b")
                 startActivity(intent)
+                Log.d(TAG, "Successfully opened WhatsApp Business")
                 true
             } catch (e2: Exception) {
+                Log.e(TAG, "Both WhatsApp and WhatsApp Business failed", e2)
                 false
             }
         }

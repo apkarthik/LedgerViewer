@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -472,8 +473,12 @@ Entry Count: ${result.entries.length}''';
           if (success == true) {
             return true;
           }
+        } on PlatformException catch (e) {
+          // Native method failed, log and fall through to alternative approach
+          debugPrint('WhatsApp native sharing failed: ${e.code} - ${e.message}');
         } catch (e) {
-          // If native method fails, fall through to alternative approach
+          // Unexpected error, log and fall through
+          debugPrint('Unexpected error in WhatsApp native sharing: $e');
         }
       }
       
