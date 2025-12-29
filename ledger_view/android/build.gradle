@@ -23,8 +23,6 @@ subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 subprojects {
-    project.evaluationDependsOn(':app')
-    
     // Fix for AGP 8.0+ namespace requirement
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
