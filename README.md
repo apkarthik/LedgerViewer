@@ -9,6 +9,7 @@ A modern Flutter Android app to view customer ledger data from Google Sheets CSV
 - 📊 **Professional Ledger Display**: Clean, formatted view in the app; simplified print output with Date, Vch Type (first letter), Vch No., Debit, and Credit columns
 - 📈 **Balance Analysis**: Analyze customer balances with advanced filters for outstanding amounts and payment tracking
 - 🖨️ **Print/PDF Support**: Generate printable ledger statements with simplified format matching accounting requirements
+- 📱 **Multiple Sharing Options**: Share ledger statements via WhatsApp (PDF/Image), general share (PDF/Image), or SMS with automatic country code prefix
 - ☁️ **Google Drive Integration**: Fetch live ledger data on each search; refresh master data independently
 - 💾 **Persistent Settings**: App data persists until uninstall or manual reset
 - 🎨 **Modern UI**: Professional, colorful design with Material Design 3
@@ -51,6 +52,7 @@ Your theme preference is saved automatically and persists across app sessions.
 2. **In the app's Settings page, configure both URLs**:
    - **Master Sheet URL**: The CSV link for your customer list (Master sheet)
    - **Ledger Sheet URL**: The CSV link for your ledger data (Ledger sheet)
+   - **WhatsApp Country Code**: Set the default country code prefix (default: +91) for WhatsApp sharing
 
 3. **Search for Ledger**:
    - Use the **Ledger Search** tab to enter a customer number, name, or mobile number (e.g., "1033", "1035", "1139B", "1525", "Pushpa", "9876543210")
@@ -58,7 +60,18 @@ Your theme preference is saved automatically and persists across app sessions.
    - Or use the **Customers** tab to browse and click on a customer to view their ledger
    - Ledger data is fetched fresh from Google Sheets on each search
    
-4. **Refresh Data**:
+4. **Share Ledger**:
+   - From the ledger view, tap the share button to access sharing options in the following order:
+     1. **WhatsApp (PDF)** - Share ledger as PDF via WhatsApp
+     2. **WhatsApp (Image)** - Share ledger as image via WhatsApp
+     3. **Share as PDF** - Share ledger as PDF via other apps
+     4. **Share as Image** - Share ledger as image via other apps
+     5. **Share SMS** - Send ledger summary via SMS
+   - For WhatsApp and SMS options, enter the recipient's 10-digit mobile number (country code will be added automatically)
+   - WhatsApp will open with the file ready to send to the specified contact
+   - SMS will open with a text summary of the ledger including totals and balance
+   
+5. **Refresh Data**:
    - Use the refresh button in the Ledger Search screen to update only the master data (customer list)
    - Ledger data is always fetched fresh when you search, so no need to refresh it separately
 

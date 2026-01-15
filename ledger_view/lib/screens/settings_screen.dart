@@ -18,8 +18,12 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _masterSheetUrlController = TextEditingController();
   final TextEditingController _ledgerSheetUrlController = TextEditingController();
+  final TextEditingController _countryCodePrefixController = TextEditingController();
   bool _isSaving = false;
   bool _hasChanges = false;
+  
+  // Country code validation regex - must start with + followed by 1-4 digits
+  static final RegExp _countryCodeRegex = RegExp(r'^\+\d{1,4}$');
 
   @override
   void initState() {
@@ -30,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     final masterUrl = await StorageService.getMasterSheetUrl();
     final ledgerUrl = await StorageService.getLedgerSheetUrl();
+    final countryCodePrefix = await StorageService.getCountryCodePrefix();
     setState(() {
       if (masterUrl != null) {
         _masterSheetUrlController.text = masterUrl;
@@ -37,12 +42,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (ledgerUrl != null) {
         _ledgerSheetUrlController.text = ledgerUrl;
       }
+      _countryCodePrefixController.text = countryCodePrefix;
     });
   }
 
   Future<void> _saveSettings() async {
     final masterUrl = _masterSheetUrlController.text.trim();
     final ledgerUrl = _ledgerSheetUrlController.text.trim();
+    final countryCodePrefix = _countryCodePrefixController.text.trim();
 
     if (masterUrl.isEmpty || ledgerUrl.isEmpty) {
       if (mounted) {
@@ -57,14 +64,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
+    // Validate country code prefix
+    if (countryCodePrefix.isEmpty || !_countryCodeRegex.hasMatch(countryCodePrefix)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please provide a valid country code (e.g., +91, +1)'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isSaving = true;
     });
     
     try {
-      // Save URLs first
+      // Save URLs and country code prefix
       await StorageService.saveMasterSheetUrl(masterUrl);
       await StorageService.saveLedgerSheetUrl(ledgerUrl);
+      await StorageService.saveCountryCodePrefix(countryCodePrefix);
 
       // Fetch and cache Master data
       if (mounted) {
@@ -167,6 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _masterSheetUrlController.clear();
         _ledgerSheetUrlController.clear();
+        _countryCodePrefixController.text = '+91'; // Reset to default
         _hasChanges = false;
       });
       if (mounted) {
@@ -714,6 +737,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 16),
+
+                // WhatsApp Country Code Prefix Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.phone,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'WhatsApp Country Code',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  Text(
+                                    'Default prefix for phone numbers',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _countryCodePrefixController,
+                          decoration: InputDecoration(
+                            labelText: 'Country Code Prefix',
+                            hintText: '+91',
+                            helperText: 'This prefix will be added to phone numbers without country code',
+                            prefixIcon: Icon(
+                              Icons.add_circle_outline,
+                              color: Colors.green.shade700,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.green.shade700,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          keyboardType: TextInputType.phone,
+                          onChanged: (_) {
+                            setState(() {
+                              _hasChanges = true;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
 
                 // App Info
@@ -753,6 +858,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _masterSheetUrlController.dispose();
     _ledgerSheetUrlController.dispose();
+    _countryCodePrefixController.dispose();
     super.dispose();
   }
 }

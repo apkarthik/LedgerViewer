@@ -11,6 +11,8 @@ class StorageService {
   static const String _cachedMasterDataKey = 'cached_master_data';
   static const String _cachedLedgerDataKey = 'cached_ledger_data';
   static const String _themeKey = 'app_theme';
+  static const String _countryCodePrefixKey = 'country_code_prefix';
+  static const String _defaultCountryCodePrefix = '+91';
 
   static Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
@@ -135,6 +137,19 @@ class StorageService {
   static Future<String?> getTheme() async {
     final prefs = await _getPrefs();
     return prefs.getString(_themeKey);
+  }
+
+  /// Save the country code prefix for WhatsApp sharing
+  static Future<void> saveCountryCodePrefix(String prefix) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_countryCodePrefixKey, prefix);
+  }
+
+  /// Get the country code prefix for WhatsApp sharing
+  /// Returns the default prefix (+91) if not set
+  static Future<String> getCountryCodePrefix() async {
+    final prefs = await _getPrefs();
+    return prefs.getString(_countryCodePrefixKey) ?? _defaultCountryCodePrefix;
   }
 
   /// Clear all settings (reset)

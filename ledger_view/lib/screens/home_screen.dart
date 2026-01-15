@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/ledger_entry.dart';
 import '../models/customer.dart';
 import '../services/csv_service.dart';
@@ -9,8 +10,14 @@ import '../widgets/ledger_display.dart';
 class HomeScreen extends StatefulWidget {
   final String? initialSearchQuery;
   final VoidCallback? onSettingsTap;
+  final bool hideSearch;
 
-  const HomeScreen({super.key, this.initialSearchQuery, this.onSettingsTap});
+  const HomeScreen({
+    super.key, 
+    this.initialSearchQuery, 
+    this.onSettingsTap,
+    this.hideSearch = false,
+  });
 
   @override
   State<HomeScreen> createState() => HomeScreenState();
@@ -403,7 +410,8 @@ class HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Search Card with Autocomplete
-                Card(
+                if (!widget.hideSearch)
+                  Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -536,7 +544,8 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                if (!widget.hideSearch)
+                  const SizedBox(height: 16),
 
                 // Status indicator
                 if (!_hasLedgerUrl)
@@ -609,6 +618,14 @@ class HomeScreenState extends State<HomeScreen> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            if (_selectedCustomer!.mobileNumber.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(Icons.phone, size: 20),
+                                onPressed: () => _makePhoneCall(_selectedCustomer!.mobileNumber),
+                                tooltip: 'Call Customer',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
                             IconButton(
                               icon: const Icon(Icons.print, size: 20),
                               onPressed: () => _printCustomerDetails(context),
@@ -651,7 +668,10 @@ class HomeScreenState extends State<HomeScreen> {
                 // Ledger display
                 if (_ledgerResult != null)
                   Expanded(
-                    child: LedgerDisplay(result: _ledgerResult!),
+                    child: LedgerDisplay(
+                      result: _ledgerResult!,
+                      customerMobileNumber: _selectedCustomer?.mobileNumber,
+                    ),
                   ),
 
                 // Empty state
@@ -739,6 +759,15 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      _showError('Could not launch phone dialer');
     }
   }
 

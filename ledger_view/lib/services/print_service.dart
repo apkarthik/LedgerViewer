@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -14,6 +17,9 @@ import '../models/customer_balance.dart';
 import '../utils/voucher_type_mapper.dart';
 
 class PrintService {
+  // Method channel for native Android/iOS functionality
+  static const platform = MethodChannel('com.ledgerview.app/whatsapp');
+  
   // Thermal printer paper format (58mm width)
   // 58mm = 164.4 points at 72 DPI
   static const thermalPageFormat = PdfPageFormat(
@@ -30,6 +36,9 @@ class PrintService {
   static const double debitWidth = 42.0;
   static const double creditWidth = 42.0;
   static const int _rgbChannelCount = 3;
+  
+  // WhatsApp sharing constants
+  static const String _whatsAppShareMessage = 'Please find your ledger statement attached.';
 
   static Future<void> printLedger(LedgerResult result) async {
     final pdf = await _generateLedgerPdf(result);
@@ -288,12 +297,7 @@ class PrintService {
       final pdf = await _generateLedgerPdf(result);
       final pdfBytes = await pdf.save();
       
-      // Create meaningful filename
-      final customerParts = result.customerName.split('.');
-      final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
-          ? customerParts[0] 
-          : result.customerName)
-          .replaceAll(RegExp(r'[^\w\s-]'), '');
+      final customerIdClean = _extractCleanCustomerId(result.customerName);
       
       if (asImage) {
         // Convert PDF to image (timestamp added in _sharePdfAsImage)
@@ -328,6 +332,215 @@ class PrintService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Check if WhatsApp is installed on the device
+  static Future<bool> isWhatsAppInstalled() async {
+    try {
+      // Try to check if WhatsApp can be launched using app-specific URL scheme
+      // For Android and iOS, use whatsapp:// scheme which is more reliable
+      if (Platform.isAndroid || Platform.isIOS) {
+        final whatsappUrl = Uri.parse('whatsapp://send');
+        final whatsappBusinessUrl = Uri.parse('whatsapp-business://send');
+        return await canLaunchUrl(whatsappUrl) || await canLaunchUrl(whatsappBusinessUrl);
+      }
+      // For other platforms, fall back to web URL
+      final whatsappUrl = Uri.parse('https://wa.me/');
+      return await canLaunchUrl(whatsappUrl);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Send SMS with ledger summary as fallback
+  static Future<void> sendLedgerSMS(LedgerResult result, {required String phoneNumber}) async {
+    try {
+      // Parse totals from the result (they're already calculated)
+      final totalDebit = double.tryParse(result.totalDebit.replaceAll(',', '')) ?? 0.0;
+      final totalCredit = double.tryParse(result.totalCredit.replaceAll(',', '')) ?? 0.0;
+      
+      final balance = totalCredit - totalDebit;
+      final balanceText = balance >= 0 
+          ? 'Balance: ₹${balance.toStringAsFixed(2)} (Credit)'
+          : 'Balance: ₹${(-balance).toStringAsFixed(2)} (Debit)';
+      
+      // Create SMS message with ledger summary
+      final message = '''Ledger Statement for ${result.customerName}
+Period: ${result.dateRange}
+Total Debit: ₹${totalDebit.toStringAsFixed(2)}
+Total Credit: ₹${totalCredit.toStringAsFixed(2)}
+$balanceText
+Entry Count: ${result.entries.length}''';
+      
+      // Format phone number for SMS (remove + and spaces)
+      final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\+\-\(\)]'), '');
+      
+      // Construct SMS URL - both iOS and Android use '?' for query parameter
+      final smsUrl = 'sms:$cleanPhoneNumber?body=${Uri.encodeComponent(message)}';
+      
+      final uri = Uri.parse(smsUrl);
+      
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        throw Exception('Could not launch SMS app');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Share ledger directly via WhatsApp with contact pre-filled
+  /// Opens WhatsApp app with the contact number and file attached
+  /// Returns true if share was initiated successfully, false otherwise
+  static Future<bool> shareViaWhatsApp(LedgerResult result, {required String phoneNumber, bool asImage = false}) async {
+    File? shareFile;
+    try {
+      final pdf = await _generateLedgerPdf(result);
+      final pdfBytes = await pdf.save();
+      
+      final customerIdClean = _extractCleanCustomerId(result.customerName);
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      
+      File file;
+      if (asImage) {
+        // Convert PDF to image
+        final filename = 'Ledger_${customerIdClean}_$timestamp.jpg';
+        
+        // Convert PDF to image using printing package with proper DPI for quality
+        final rasters = await Printing.raster(pdfBytes, dpi: 300);
+        final pdfRaster = await rasters.first;
+
+        // Convert raster to PNG first to preserve colors, then flatten on white background
+        final pngBytes = await pdfRaster.toPng();
+        final imgImage = img.decodePng(pngBytes);
+
+        if (imgImage == null) {
+          throw Exception('Failed to decode PDF image for sharing');
+        }
+
+        final whiteBackground = img.Image(
+          width: imgImage.width,
+          height: imgImage.height,
+          format: img.Format.uint8,
+          numChannels: _rgbChannelCount,
+        );
+
+        img.fill(
+          whiteBackground,
+          color: img.ColorUint8.rgb(255, 255, 255),
+        );
+
+        // Note: compositeImage writes directly into whiteBackground to overlay the raster
+        img.compositeImage(
+          whiteBackground,
+          imgImage,
+          dstX: 0,
+          dstY: 0,
+        );
+
+        // Encode as JPEG with solid white background
+        final imageBytes = img.encodeJpg(whiteBackground);
+        
+        final tempDir = await getTemporaryDirectory();
+        file = File('${tempDir.path}/$filename');
+        await file.writeAsBytes(imageBytes);
+      } else {
+        // Save as PDF
+        final filename = 'Ledger_${customerIdClean}_$timestamp.pdf';
+        final tempDir = await getTemporaryDirectory();
+        file = File('${tempDir.path}/$filename');
+        await file.writeAsBytes(pdfBytes);
+      }
+      shareFile = file;
+      
+      // Validate phone number
+      final formattedPhone = _formatPhoneForWhatsApp(phoneNumber);
+      if (formattedPhone.isEmpty) {
+        throw Exception('Please enter a valid WhatsApp number with country code');
+      }
+      
+      // Try Android-specific method channel first (for direct WhatsApp targeting)
+      if (Platform.isAndroid) {
+        try {
+          final success = await platform.invokeMethod('shareToWhatsApp', {
+            'filePath': file.path,
+            'phoneNumber': formattedPhone,
+            'message': _whatsAppShareMessage,
+            'mimeType': asImage ? 'image/jpeg' : 'application/pdf',
+          });
+          
+          if (success == true) {
+            return true;
+          }
+        } on PlatformException catch (e) {
+          // Native method failed, log and fall through to alternative approach
+          debugPrint('WhatsApp native sharing failed: ${e.code} - ${e.message}');
+        } catch (e) {
+          // Unexpected error, log and fall through
+          debugPrint('Unexpected error in WhatsApp native sharing: $e');
+        }
+      }
+      
+      // Fallback approach for iOS or if Android native method fails
+      // Share file with contact information in the message
+      final xFile = _createXFileFromPath(file.path, asImage);
+      
+      // Build message with contact information
+      final shareMessage = '$_whatsAppShareMessage\n\nRecipient: $phoneNumber';
+      
+      // Use shareXFiles which will show WhatsApp as a share option
+      await Share.shareXFiles(
+        [xFile],
+        text: shareMessage,
+      );
+      
+      return true; // Share was initiated successfully
+    } catch (e) {
+      // Fallback to system share sheet so user can still share manually
+      try {
+        if (shareFile == null) {
+          rethrow;
+        }
+        final fallbackFile = _createXFileFromPath(shareFile.path, asImage);
+        await Share.shareXFiles(
+          [fallbackFile],
+          text: '$_whatsAppShareMessage\n\nRecipient: $phoneNumber',
+        );
+        return true;
+      } catch (fallbackError) {
+        throw Exception('WhatsApp share failed ($e) and fallback share also failed ($fallbackError)');
+      }
+    }
+  }
+
+  /// Convert phone number to WhatsApp friendly format (digits only)
+  static String _formatPhoneForWhatsApp(String phoneNumber) {
+    final digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    if (digitsOnly.length < 10) {
+      return '';
+    }
+    return digitsOnly;
+  }
+
+  /// Create XFile from file path with appropriate mime type
+  static XFile _createXFileFromPath(String filePath, bool asImage) {
+    final file = File(filePath);
+    return XFile(
+      file.path,
+      mimeType: asImage ? 'image/jpeg' : 'application/pdf',
+      name: file.uri.pathSegments.last,
+    );
+  }
+
+  /// Extract clean customer ID from customer name for filename
+  static String _extractCleanCustomerId(String customerName) {
+    final customerParts = customerName.split('.');
+    final customerIdClean = (customerParts.isNotEmpty && customerParts[0].isNotEmpty 
+        ? customerParts[0] 
+        : customerName)
+        .replaceAll(RegExp(r'[^\w\s-]'), '');
+    return customerIdClean;
   }
 
   /// Print balance analysis

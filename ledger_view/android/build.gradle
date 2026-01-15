@@ -23,7 +23,19 @@ subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 subprojects {
-    project.evaluationDependsOn(':app')
+    // Fix for AGP 8.0+ namespace requirement
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null || namespace.isEmpty()) {
+                    // Set a fallback namespace for plugins that don't define one
+                    // Use the project name to create a unique namespace
+                    def sanitizedName = project.name.replaceAll('-', '_').replaceAll(':', '.')
+                    namespace = "com.ledgerview.plugin." + sanitizedName
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
